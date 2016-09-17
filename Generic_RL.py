@@ -500,6 +500,10 @@ def make_map():
         player.x = new_x
         player.y = new_y
         stairs_up = Object(new_x, new_y, chr(175), 'some stairs going up', libtcod.white, always_visible=True)
+        if len(allies) > 0: (allies[0].x, allies[0].y) = (new_x -1, new_y -1)
+        if len(allies) > 1: (allies[1].x, allies[1].y) = (new_x +1, new_y -1)
+        if len(allies) > 2: (allies[2].x, allies[2].y) = (new_x +1, new_y +1)
+        if len(allies) > 3: (allies[3].x, allies[3].y) = (new_x -1, new_y +1)
       else:
         (prev_x, prev_y) = rooms[num_rooms-1].center()
         if libtcod.random_get_int(0, 0, 1) == 1:
@@ -703,6 +707,9 @@ def is_blocked(x ,y):
   if map[x][y].blocked:
     return True
   for object in objects:
+    if object.blocks and object.x == x and object.y == y:
+      return True
+  for object in allies:
     if object.blocks and object.x == x and object.y == y:
       return True
   return False
@@ -1625,6 +1632,10 @@ def next_level():
     initialize_fov()
   init_level(player_status)
   (player.x, player.y) = (stairs_up.x, stairs_up.y)
+  if len(allies) > 0: (allies[0].x, allies[0].y) = (player.x -1, player.y -1)
+  if len(allies) > 1: (allies[1].x, allies[1].y) = (player.x +1, player.y -1)
+  if len(allies) > 2: (allies[2].x, allies[2].y) = (player.x +1, player.y +1)
+  if len(allies) > 3: (allies[3].x, allies[3].y) = (player.x -1, player.y +1)
   initialize_fov()
   
 def previous_level():
@@ -1644,6 +1655,10 @@ def previous_level():
       initialize_fov()
   init_level(player_status)
   (player.x, player.y) = (stairs_down.x, stairs_down.y)
+  if len(allies) > 0: (allies[0].x, allies[0].y) = (player.x -1, player.y -1)
+  if len(allies) > 1: (allies[1].x, allies[1].y) = (player.x +1, player.y -1)
+  if len(allies) > 2: (allies[2].x, allies[2].y) = (player.x +1, player.y +1)
+  if len(allies) > 3: (allies[3].x, allies[3].y) = (player.x -1, player.y +1)
   initialize_fov()
   
 def init_level(player_status):
