@@ -1531,10 +1531,6 @@ def new_game():
   item_component = Item(5, projectile_bonus = 2, use_function=projectile)
   item = Object(0, 0, chr(150), 'throwing knife', libtcod.light_blue, item=item_component)
   player.fighter.inventory.append(item)
-  item_component = Item(5, use_function=spell)
-  spell_component = Spell(power=10, spell_range =5 , effect=cast_possess)
-  item = Object(0, 0, chr(151), 'scroll of possession', libtcod.green, item=item_component, spell=spell_component)
-  player.fighter.inventory.append(item)
   dungeon_level = 0
   max_d_level = 1
   for f in glob.glob('lvl*'):
