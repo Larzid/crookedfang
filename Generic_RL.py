@@ -253,16 +253,16 @@ class Item:
             has_item = True
             package.item.qty = package.item.qty + self.qty
             objects.remove(self.owner)
-            if owner == player: message('You picked up ' + str(self.qty) + ' ' + self.owner.name + ' and now have ' + str(package.item.qty) + '!', libtcod.green)
+            if owner == player or allies.count(owner) > 0: message('You picked up ' + str(self.qty) + ' ' + self.owner.name + ' and now have ' + str(package.item.qty) + '!', libtcod.green)
             break
         if not has_item:
           owner.fighter.inventory.append(self.owner)
           objects.remove(self.owner)
-          if owner == player: message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
+          if owner == player or allies.count(owner) > 0: message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
       else:
         owner.fighter.inventory.append(self.owner)
         objects.remove(self.owner)
-        if owner == player: message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
+        if owner == player or allies.count(owner) > 0: message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
   def use(self, user):
     if self.owner.equipment:
       self.owner.equipment.toggle_equip(user)
@@ -307,36 +307,36 @@ class Equipment:
         self.is_equipped = True
         user.fighter.equipment['good hand'] = self.owner
         user.fighter.inventory.remove(self.owner)
-        if user == player: message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
+        if user == player or allies.count(user) > 0: message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
       elif user.fighter.equipment['off hand'] is None:
         self.is_equipped = True
         user.fighter.equipment['off hand'] = self.owner
         user.fighter.inventory.remove(self.owner)
-        if user == player: message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
+        if user == player or allies.count(user) > 0: message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
       else:
         hand = menu('Equip to which hand?',[('good hand', libtcod.white), ('off hand', libtcod.white)], 22)
         if hand == 0:
           user.fighter.equipment['good hand'].equipment.is_equipped = False
           user.fighter.inventory.append(user.fighter.equipment['good hand'])
-          if user == player: message('Dequipped ' + user.fighter.equipment['good hand'].name + ' from ' + 'good hand' + '.', libtcod.light_yellow)
+          if user == player or allies.count(user) > 0: message('Dequipped ' + user.fighter.equipment['good hand'].name + ' from ' + 'good hand' + '.', libtcod.light_yellow)
           self.is_equipped = True
           user.fighter.equipment['good hand'] = self.owner
           user.fighter.inventory.remove(self.owner)
-          if user == player: message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
+          if user == player or allies.count(user) > 0: message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
         elif hand == 1:
           user.fighter.equipment['off hand'].equipment.is_equipped = False
           user.fighter.inventory.append(user.fighter.equipment['off hand'])
-          if user == player: message('Dequipped ' + user.fighter.equipment['off hand'].name + ' from ' + 'off hand' + '.', libtcod.light_yellow)
+          if user == player or allies.count(user) > 0: message('Dequipped ' + user.fighter.equipment['off hand'].name + ' from ' + 'off hand' + '.', libtcod.light_yellow)
           self.is_equipped = True
           user.fighter.equipment['off hand'] = self.owner
           user.fighter.inventory.remove(self.owner)
-          if user == player: message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
+          if user == player or allies.count(user) > 0: message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
     else:
       if user.fighter.equipment[self.slot] is not None: user.fighter.equipment[self.slot].equipment.dequip(user)
       self.is_equipped = True
       user.fighter.equipment[self.slot] = self.owner
       user.fighter.inventory.remove(self.owner)
-      if user == player: message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
+      if user == player or allies.count(user) > 0: message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
   def dequip(self, user):
     if not self.is_equipped: return
     if self.owner == user.fighter.equipment['good hand']: user.fighter.equipment['good hand'] = None
@@ -344,7 +344,7 @@ class Equipment:
     else: user.fighter.equipment[self.slot] = None
     user.fighter.inventory.append(self.owner)
     self.is_equipped = False
-    if user == player: message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
+    if user == player or allies.count(user) > 0: message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
 
 ##############
 #A.I. CLASSES#
@@ -465,6 +465,7 @@ class PossessedMonster:
         for object in objects:
           object.clear()
         render_all(self.owner)
+        libtcod.map_compute_fov(fov_map, self.owner.x, self.owner.y, self.owner.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
         action = handle_keys(self.owner)
 #      self.num_turns -= 1
 #    else:
@@ -1471,6 +1472,7 @@ def cast_possess(owner, caster):
     old_color = monster.color
     old_char = monster.char
     old_death = monster.fighter.death_function
+    monster.char = '@'
     monster.fighter.death_function = ally_death
     monster.ai = PossessedMonster(old_ai, old_color, old_char, old_death, owner.spell.power)
     monster.ai.owner = monster
@@ -1529,6 +1531,11 @@ def new_game():
   item_component = Item(5, projectile_bonus = 2, use_function=projectile)
   item = Object(0, 0, chr(150), 'throwing knife', libtcod.light_blue, item=item_component)
   player.fighter.inventory.append(item)
+  item_component = Item(5, use_function=spell)
+  spell_component = Spell(power=10, spell_range =5 , effect=cast_possess)
+  item = Object(0, 0, chr(151), 'scroll of possession', libtcod.green, item=item_component, spell=spell_component)
+  player.fighter.inventory.append(item)
+  dungeon_level = 0
   max_d_level = 1
   for f in glob.glob('lvl*'):
     os.remove(f)
@@ -1561,6 +1568,7 @@ def play_game():
     libtcod.console_flush()
     check_level_up(player)
     render_all(player)
+    libtcod.map_compute_fov(fov_map, player.x, player.y, player.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
     player_action = handle_keys(player)
     for object in objects:
       object.clear()
