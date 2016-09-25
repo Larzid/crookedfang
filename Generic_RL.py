@@ -18,6 +18,13 @@
 # Ranged weapons (1) and some (1) throwable items
 # Projectile path (will not fire ranged weapon or throw item if the path is obstucted)
 # handle_keys() function can take control any NPC trough the Possessed_Monster AI class
+# Heal over time (everybody)
+# fighter.state implemented to deal with status ailments
+# turn counter
+# Melee attacks can inflict aditional effects
+# Creatures may inflict secondary effect when attacking un-armed with creature.fighter.nat_atk_effect
+# Melee weapons may grant secondary effect with weapon.equipment.bonus_effect
+# Wielding a weapon disables nat_atk_effect wether or not the weapon grants bonus_effect
 
 # KNOWN BUGS
 # (FIXED) fireball damage re applies when result in monster death
@@ -59,14 +66,19 @@ FULL_ROOMS = True
 ########
 
 class Tile:
-  def __init__(self, blocked, block_sight = None):
+  def __init__(self, blocked, block_sight=None, tile_face=None, back_light=None, back_dark=None, fore_light=None, fore_dark=None):
     self.explored = False
     self.blocked = blocked
     if block_sight is None: block_sight = blocked
     self.block_sight = block_sight
+    self.tile_face = tile_face
+    self.back_light = back_light
+    self.back_dark = back_dark
+    self.fore_light = fore_light
+    self.fore_dark = fore_dark
 
 class Object:
-  def __init__(self, x, y, char, name, color, blocks=False, always_visible=False, fighter=None, ai=None, sight=None, item=None, spell=None, equipment=None):
+  def __init__(self, x, y, char, name, color, blocks=False, always_visible=False, fighter=None, ai=None, sight=None, item=None, spell=None, equipment=None, gen=None):
     self.x = x
     self.y = y
     self.char = char
@@ -94,6 +106,7 @@ class Object:
       self.equipment.owner = self
       self.item = Item(1, stackable=False)
       self.item.owner = self
+    self.gen = gen
   def move(self, dx, dy):
     if self.x + dx >= 0 and self.x + dx <= MAP_WIDTH - 1 and self.y + dy >= 0 and self.y + dy <= MAP_HEIGHT - 1 and not is_blocked(self.x + dx, self.y + dy):
       self.x += dx
@@ -104,7 +117,7 @@ class Object:
       if libtcod.map_is_in_fov(fov_map, self.x, self.y):
         libtcod.console_set_default_foreground(con, self.color)
       else:
-        libtcod.console_set_default_foreground(con, libtcod.darker_gray)
+        libtcod.console_set_default_foreground(con, libtcod.dark_sepia)
       libtcod.console_put_char(con, self.x, self.y, self.char, libtcod.BKGND_NONE)
     for pov in allies:
       libtcod.map_compute_fov(fov_map, pov.x, pov.y, pov.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
@@ -112,13 +125,13 @@ class Object:
         if libtcod.map_is_in_fov(fov_map, self.x, self.y):
           libtcod.console_set_default_foreground(con, self.color)
         else:
-          libtcod.console_set_default_foreground(con, libtcod.darker_gray)
+          libtcod.console_set_default_foreground(con, libtcod.darkest_sepia)
         libtcod.console_put_char(con, self.x, self.y, self.char, libtcod.BKGND_NONE)
   def clear(self):
     if libtcod.map_is_in_fov(fov_map, self.x, self.y):
-      libtcod.console_set_default_foreground(con, libtcod.white)
+      libtcod.console_set_default_foreground(con, libtcod.black)
     else:
-      libtcod.console_set_default_foreground(con, libtcod.darker_gray)
+      libtcod.console_set_default_foreground(con, libtcod.darkest_sepia)
     if map[self.x][self.y].explored:
       libtcod.console_put_char(con, self.x, self.y, chr(172), libtcod.BKGND_NONE)
     else:
@@ -172,18 +185,25 @@ class Rect:
   def intersect(self, other):
     return (self.x1 <= other.x2 and self.x2 >= other.x1 and
             self.y1 <= other.y2 and self.y2 >= other.y1)
+  def intersect_loose(self, other):
+    return (self.x1 <= other.x2+1 and self.x2 >= other.x1-1 and
+            self.y1 <= other.y2+1 and self.y2 >= other.y1-1)
 
 ###################
 #COMPONENT CLASSES#
 ###################
 
 class Fighter:
-  def __init__(self, hp, defense, power, sight, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
+  def __init__(self, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
     self.base_max_hp = hp
     self.hp = hp
     self.base_defense = defense
     self.base_power = power
     self.base_sight = sight
+    self.poison_resist = poison_resist
+    if state == None: state = 'normal'
+    self.state = state
+    self.state_inflictor = state_inflictor
     if xp_bonus == None: xp_bonus = 0
     self.xp_bonus = xp_bonus
     if xp == None: xp = 0
@@ -195,6 +215,8 @@ class Fighter:
     self.inv_max = inv_max
     self.equipment = {'good hand':None, 'off hand':None, 'head':None, 'torso':None, 'feet':None}
     self.death_function = death_function
+    self.last_hurt = last_hurt
+    self.nat_atk_effect = nat_atk_effect
   @property
   def max_hp(self):
     bonus = sum(equip.equipment.max_hp_bonus for equip in self.equipment.values() if equip is not None)
@@ -211,9 +233,21 @@ class Fighter:
   def sight(self):
     bonus = sum(equip.equipment.sight_bonus for equip in self.equipment.values() if equip is not None)
     return self.base_sight + bonus
+  @property
+  def secondary_effect(self):
+    if self.equipment is None or (self.equipment['good hand'] is None and self.equipment['off hand'] is None):
+      return [self.nat_atk_effect]
+    else:
+      sec_effect = []
+      if self.equipment['good hand'] is not None:
+        sec_effect.append(self.equipment['good hand'].equipment.bonus_effect)
+      if self.equipment['off hand'] is not None:
+        sec_effect.append(self.equipment['off hand'].equipment.bonus_effect)
+      return sec_effect
   def take_damage(self, attacker, damage):
     if damage > 0:
       self.hp -= damage
+      self.last_hurt = turn
       if self.hp <= 0:
         function = self.death_function
         if function is not None:
@@ -222,17 +256,35 @@ class Fighter:
   def attack(self, target):
     damage = self.power - target.fighter.defense
     if damage > 0:
-      if target == player:
+      if target == player or allies.count(target) > 0:
         message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
       else:
-        message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.purple)
+        message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.green)
       target.fighter.take_damage(self.owner, damage)
+      if target.fighter is not None:
+        effect_list = self.secondary_effect
+        if len(effect_list)>0:
+          for effect in effect_list:
+            if effect is not None:
+              effect(self.owner, target)
     else:
       message(self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no efect!', libtcod.red)
   def heal(self, amount):
     self.hp += amount
     if self.hp > self.max_hp:
       self.hp = self.max_hp
+  def check_state(self):
+    if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
+      self.heal(1)
+    if self.state == 'poison':
+      self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
+      if self.owner == player or allies.count(self.owner) > 0: message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.red)
+      if self.state_inflictor == player or allies.count(self.state_inflictor) > 0: message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
+      if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
+        if self.state_inflictor == player or allies.count(self.state_inflictor) > 0: message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.orange)
+        self.state = 'normal'
+        self.state_inflictor = None
+        if self.owner == player or allies.count(self.owner) > 0: message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
 
 class Item:
   def __init__(self, qty, ammo=None, projectile_bonus=None, stackable=None , use_function=None):
@@ -244,7 +296,7 @@ class Item:
     self.use_function = use_function
   def pick_up(self, owner):
     if len(owner.fighter.inventory) >= owner.fighter.inv_max:
-      message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
+      if owner == player or allies.count(owner) > 0: msgbox('Your inventory is full, cannot pick up ' + self.owner.name + '.')
     else:
       if self.stackable:
         has_item = False
@@ -268,7 +320,7 @@ class Item:
       self.owner.equipment.toggle_equip(user)
       return
     if self.use_function is None:
-      message('The ' + self.owner.name + ' cannot be used.')
+      if user == player or allies.count(user) > 0: msgbox('The ' + self.owner.name + ' cannot be used.')
     else:
       if self.use_function(self.owner, user) != 'cancelled':
         if self.qty > 1:
@@ -279,7 +331,7 @@ class Item:
     objects.append(self.owner)
     owner.fighter.inventory.remove(self.owner)
     (self.owner.x, self.owner.y) = (owner.x, owner.y)
-    message('You dropped ' + str(self.qty) + ' ' + self.owner.name + '.', libtcod.yellow)
+    if owner == player or allies.count(owner) > 0: message('You dropped ' + str(self.qty) + ' ' + self.owner.name + '.', libtcod.yellow)
 
 class Spell:
   def __init__(self, power=None, spell_range=None, effect=None):
@@ -288,13 +340,14 @@ class Spell:
     self.effect = effect
 
 class Equipment:
-  def __init__(self, slot, ammo=None, power_bonus=0, defense_bonus=0, max_hp_bonus=0, sight_bonus=0):
+  def __init__(self, slot, ammo=None, power_bonus=0, defense_bonus=0, max_hp_bonus=0, sight_bonus=0, bonus_effect=None):
     self.slot = slot
     self.ammo = ammo
     self.power_bonus = power_bonus
     self.defense_bonus = defense_bonus
     self.max_hp_bonus= max_hp_bonus
     self.sight_bonus = sight_bonus
+    self.bonus_effect = bonus_effect
     self.is_equipped = False
   def toggle_equip(self, user):
     if self.is_equipped:
@@ -360,6 +413,32 @@ class BasicMonster:
         monster.move_astar(player)
       elif player.fighter.hp > 0:
         monster.fighter.attack(player)
+    else:
+      movement = False
+      for ally in allies:
+        if libtcod.map_is_in_fov(fov_map, ally.x, ally.y):
+          if monster.distance_to(ally) >= 2:
+            monster.move_astar(ally)
+            movement = True
+          elif ally.fighter.hp > 0:
+            monster.fighter.attack(ally)
+            movement = True
+      while movement is False:
+        (x, y) = (libtcod.random_get_int(0, -1, 1), libtcod.random_get_int(0, -1, 1))
+        if not is_blocked(monster.x + x, monster.y + y):
+          movement = True
+          monster.move(x, y)
+
+class BitingMonster:
+  def take_turn(self):
+    monster = self.owner
+    fov_recompute = True
+    libtcod.map_compute_fov(fov_map, monster.x, monster.y, monster.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
+    if libtcod.map_is_in_fov(fov_map, player.x, player.y):
+      if monster.distance_to(player) >= 2:
+        monster.move_astar(player)
+      elif player.fighter.hp > 0:
+        monster.fighter.attack(player, secondary_effect=inflict_poison)
     else:
       movement = False
       for ally in allies:
@@ -454,6 +533,7 @@ class PossessedMonster:
     self.old_color = old_color
     self.old_char = old_char
     self.old_death = old_death
+    self.check_state = True
   def take_turn(self):
     if self.num_turns > 0:
       action = 'didnt-take-turn'
@@ -462,11 +542,15 @@ class PossessedMonster:
         libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, key, mouse)
         libtcod.console_flush()
         check_level_up(self.owner)
+        if self.check_state == True:
+          self.owner.fighter.check_state()
+          self.check_state = False
         for object in objects:
           object.clear()
         render_all(self.owner)
         libtcod.map_compute_fov(fov_map, self.owner.x, self.owner.y, self.owner.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
         action = handle_keys(self.owner)
+      self.check_state = True
 #      self.num_turns -= 1
 #    else:
 #      self.owner.ai = self.old_ai
@@ -480,7 +564,7 @@ class PossessedMonster:
 def make_map():
   global map, objects, stairs_down, stairs_up, rooms
   objects = [player]
-  map = [[ Tile(True) for y in range(MAP_HEIGHT) ] for x in range(MAP_WIDTH) ]
+  map = [[ Tile(blocked=True, tile_face=chr(173), back_light=libtcod.black, back_dark=libtcod.black, fore_light=libtcod.white, fore_dark=libtcod.dark_gray) for y in range(MAP_HEIGHT) ] for x in range(MAP_WIDTH) ]
   rooms = []
   num_rooms = 0
   for r in range(MAX_ROOMS):
@@ -500,7 +584,7 @@ def make_map():
       if num_rooms == 0:
         player.x = new_x
         player.y = new_y
-        stairs_up = Object(new_x, new_y, chr(175), 'some stairs going up', libtcod.white, always_visible=True)
+        stairs_up = Object(new_x, new_y, chr(175), 'some stairs going up', libtcod.sepia, always_visible=True)
         if len(allies) > 0: (allies[0].x, allies[0].y) = (new_x -1, new_y -1)
         if len(allies) > 1: (allies[1].x, allies[1].y) = (new_x +1, new_y -1)
         if len(allies) > 2: (allies[2].x, allies[2].y) = (new_x +1, new_y +1)
@@ -516,7 +600,7 @@ def make_map():
       place_objects(new_room)
       rooms.append(new_room)
       num_rooms += 1
-  stairs_down = Object(new_x, new_y, chr(174), 'some stairs going down', libtcod.white, always_visible=True)
+  stairs_down = Object(new_x, new_y, chr(174), 'some stairs going down', libtcod.sepia, always_visible=True)
   objects.append(stairs_down)
   stairs_down.send_to_back()
   objects.append(stairs_up)
@@ -528,24 +612,39 @@ def create_room(room):
     for y in range(room.y1 + 1, room.y2):
       map[x][y].blocked = False
       map[x][y].block_sight = False
+      map[x][y].tile_face = chr(172)
+      map[x][y].back_light=libtcod.darker_sepia
+      map[x][y].back_dark=libtcod.darkest_sepia
+      map[x][y].fore_light=libtcod.black
+      map[x][y].fore_dark=libtcod.darkest_sepia
 
 def create_h_tunnel(x1, x2, y):
   global map
   for x in range(min(x1, x2), max(x1, x2) +1):
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
 
 def create_v_tunnel(y1, y2, x):
   global map
   for y in range(min(y1, y2), max(y1, y2) +1):
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
 
 def make_world():
   global map, objects, rooms, num_rooms
   objects = [player]
   (player.x, player.y) = (1, 1)
-  map = [[ Tile(False, False) for y in range(MAP_HEIGHT) ] for x in range(MAP_WIDTH) ]
+  map = [[ Tile(blocked=False, block_sight=False, tile_face=chr(250), back_light=libtcod.darker_green, back_dark=libtcod.darkest_green, fore_light=libtcod.dark_green, fore_dark=libtcod.darkest_green) for y in range(MAP_HEIGHT) ] for x in range(MAP_WIDTH) ]
   rooms = []
   for r in range(20):
     new_town = Object(libtcod.random_get_int(0, 2, MAP_WIDTH - 2), libtcod.random_get_int(0, 2, MAP_HEIGHT - 2), '0', 'town # ' + str(r), libtcod.sepia, always_visible=True)
@@ -558,11 +657,20 @@ def make_world():
       rooms.append(new_town)
   objects = objects + rooms
 
+def pick_char():
+  pick = libtcod.random_get_int(0, 1, 100)
+  if pick <= 16: return '`'
+  elif pick <= 32: return "'"
+  elif pick <= 48: return ','
+  elif pick <= 64: return ';'
+  elif pick <= 80: return ':'
+  else: return '.'
+
 def make_town():
   global map, objects, stairs_down, rooms, num_rooms
   objects = [player]
   (player.x, player.y) = (1, 1)
-  map = [[ Tile(False, False) for y in range(MAP_HEIGHT) ] for x in range(MAP_WIDTH) ]
+  map = [[ Tile(blocked=False, block_sight=False, tile_face=chr(250), back_light=libtcod.darker_green, back_dark=libtcod.darkest_green, fore_light=libtcod.dark_green, fore_dark=libtcod.darkest_green) for y in range(MAP_HEIGHT) ] for x in range(MAP_WIDTH) ]
   rooms = []
   num_rooms = 0
   for r in range(15):
@@ -573,7 +681,7 @@ def make_town():
     new_room = Rect(x, y, w, h)
     failed = False
     for other_room in rooms:
-      if new_room.intersect(other_room):
+      if new_room.intersect_loose(other_room):
         failed = True
         break
     if not failed:
@@ -581,10 +689,26 @@ def make_town():
       (new_x, new_y) = new_room.center()
       door = False
       while door == False:
-        door_pos = libtcod.random_get_int(0, new_room.x1 + 1, new_room.x2 - 1)
-        if not is_blocked(door_pos, new_room.y2 - 1):
-          map[door_pos][new_room.y2] = Tile(False, False)
-          door = True
+        if libtcod.random_get_int(0, 0, 1)==0:
+          door_pos = libtcod.random_get_int(0, new_room.x1 + 1, new_room.x2 - 1)
+          if libtcod.random_get_int(0, 0, 1)==0:
+            if not is_blocked(door_pos, new_room.y2 - 1):
+              map[door_pos][new_room.y2] = Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia)
+              door = True
+          else:
+            if not is_blocked(door_pos, new_room.y1 + 1):
+              map[door_pos][new_room.y1] = Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia)
+              door = True
+        else:
+          door_pos = libtcod.random_get_int(0, new_room.y1 + 1, new_room.y2 - 1)
+          if libtcod.random_get_int(0, 0, 1)==0:
+            if not is_blocked(new_room.x2 - 1, door_pos):
+              map[new_room.x2][door_pos] = Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia)
+              door = True
+          else:
+            if not is_blocked(new_room.x1 + 1, door_pos):
+              map[new_room.x1][door_pos] = Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia)
+              door = True
       rooms.append(new_room)
       num_rooms += 1
 
@@ -593,7 +717,7 @@ def make_bsp(room, depth):
   objects = [player]
   for y in range(room.y1, room.y2 + 1):
     for x in range(room.x1, room.x2 + 1):
-      map[x][y] = Tile(True)
+      map[x][y] = Tile(blocked=True, block_sight=True, tile_face=chr(173), back_light=libtcod.white, back_dark=libtcod.gray, fore_light=libtcod.dark_red, fore_dark=libtcod.darker_red)
   bsp_rooms = []
   bsp = libtcod.bsp_new_with_size(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1)
   libtcod.bsp_split_recursive(bsp, 0, depth, MIN_SIZE + 1, MIN_SIZE + 1, 1.5, 1.5)
@@ -601,7 +725,7 @@ def make_bsp(room, depth):
 #  if num_rooms == 0:
   stairs_down_location = random.choice(bsp_rooms)
   bsp_rooms.remove(stairs_down_location)
-  stairs_down = Object(stairs_down_location[0], stairs_down_location[1], chr(174), 'some stairs going down', libtcod.white, always_visible=True)
+  stairs_down = Object(stairs_down_location[0], stairs_down_location[1], chr(174), 'some stairs going down', libtcod.sepia, always_visible=True)
   objects.append(stairs_down)
   stairs_down.send_to_back()
   for room in bsp_rooms:
@@ -629,6 +753,12 @@ def traverse_node(node, dat):
       for y in range(miny, maxy + 1):
         map[x][y].blocked = False
         map[x][y].block_sight = False
+        map[x][y].tile_face = chr(172)
+        map[x][y].back_light=libtcod.darker_sepia
+        map[x][y].back_dark=libtcod.darkest_sepia
+        map[x][y].fore_light=libtcod.black
+        map[x][y].fore_dark=libtcod.darkest_sepia
+
     bsp_rooms.append(((minx + maxx) / 2, (miny + maxy) / 2))
   else:
     left = libtcod.bsp_left(node)
@@ -672,17 +802,32 @@ def vline(map, x, y1, y2):
   for y in range(y1,y2+1):
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
  
 def vline_up(map, x, y):
   while y >= 0 and map[x][y].blocked == True:
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
     y -= 1
  
 def vline_down(map, x, y):
   while y < MAP_HEIGHT and map[x][y].blocked == True:
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
     y += 1
  
 def hline(map, x1, y, x2):
@@ -691,17 +836,32 @@ def hline(map, x1, y, x2):
   for x in range(x1,x2+1):
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
  
 def hline_left(map, x, y):
   while x >= 0 and map[x][y].blocked == True:
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
     x -= 1
  
 def hline_right(map, x, y):
   while x < MAP_WIDTH and map[x][y].blocked == True:
     map[x][y].blocked = False
     map[x][y].block_sight = False
+    map[x][y].tile_face = chr(172)
+    map[x][y].back_light=libtcod.darker_sepia
+    map[x][y].back_dark=libtcod.darkest_sepia
+    map[x][y].fore_light=libtcod.black
+    map[x][y].fore_dark=libtcod.darkest_sepia
     x += 1
 
 def is_blocked(x ,y):
@@ -722,7 +882,8 @@ def place_objects(room):
 def spawn_monsters(room):
   max_monsters = from_dungeon_level([[2, 1], [3, 4], [5, 6]])
   monster_chances = {}
-  monster_chances['orc'] = 80
+  monster_chances['snake'] = 40
+  monster_chances['orc'] = 40
   monster_chances['troll'] = from_dungeon_level([[15, 3], [30, 5], [60, 7]])
   num_monsters = libtcod.random_get_int(0, 0, max_monsters)
   for i in range(num_monsters):
@@ -731,13 +892,17 @@ def spawn_monsters(room):
     if not is_blocked(x, y):
       choice = random_choice(monster_chances)
       if choice == 'orc':
-        fighter_component = Fighter(hp=20, defense=0, power=4, sight=10, xp_bonus=35, inv_max=5, death_function=monster_death)
+        fighter_component = Fighter(hp=20, defense=0, power=4, sight=10, poison_resist=20, xp_bonus=35, inv_max=5, death_function=monster_death)
         ai_component = EquippingMonster()
-        monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component)
-      elif choice == 'troll':
-        fighter_component = Fighter(hp=30, defense=2, power=8, sight=5, xp_bonus=100, inv_max=1, death_function=monster_death)
+        monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component, gen=turn)
+      elif choice == 'snake':
+        fighter_component = Fighter(hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, inv_max=1, death_function=monster_death, nat_atk_effect=inflict_poison)
         ai_component = BasicMonster()
-        monster = Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True, fighter=fighter_component, ai=ai_component)
+        monster = Object(x, y, 's', 'snake', libtcod.darker_green, blocks=True, fighter=fighter_component, ai=ai_component, gen=turn)
+      elif choice == 'troll':
+        fighter_component = Fighter(hp=30, defense=2, power=8, sight=5, poison_resist=30, xp_bonus=100, inv_max=1, death_function=monster_death)
+        ai_component = BasicMonster()
+        monster = Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True, fighter=fighter_component, ai=ai_component, gen=turn)
         item_component = Item(5)
         gold = Object(0, 0, chr(166), 'gold', libtcod.gold, item=item_component)
         monster.fighter.inventory.append(gold)
@@ -797,10 +962,13 @@ def spawn_items(room):
         item = Object(x, y, chr(150), 'throwing knife', libtcod.light_blue, item=item_component)
       elif choice == 'bow':
         equipment_component = Equipment(slot='hand', ammo='arrow', power_bonus = 1)
-        item = Object(x, y, chr(146), 'bow', libtcod.dark_sepia, equipment=equipment_component)
+        item = Object(x, y, chr(146), 'bow', libtcod.dark_gray, equipment=equipment_component)
       elif choice == 'arrow':
         item_component = Item(5, ammo='arrow', projectile_bonus = 1)
-        item = Object(x, y, chr(147), 'arrow', libtcod.dark_sepia, item=item_component)
+        item = Object(x, y, chr(147), 'arrow', libtcod.dark_gray, item=item_component)
+      if item.equipment and item.equipment.slot == 'hand' and item.equipment.ammo == None and libtcod.random_get_int(0, 1, 100) <= 50:
+        item.name = 'poisoned ' + item.name
+        item.equipment.bonus_effect = inflict_poison
       objects.append(item)
       item.send_to_back()
 
@@ -838,6 +1006,10 @@ def move_or_attack(actor, dx, dy):
     if object.fighter and object.x == x and object.y == y:
       target = object
       break
+  for object in allies:
+    if object.fighter and object.x == x and object.y == y:
+      target = object
+      break
   if target is not None:  
     actor.fighter.attack(target)
     fov_recompute = True
@@ -857,10 +1029,7 @@ def player_death(player, attacker):
 def monster_death(monster, attacker):
   eq = [piece for piece in monster.fighter.equipment.values() if piece is not None]
   for obj in eq:
-    obj.x = monster.x
-    obj.y = monster.y
-    objects.append(obj)
-    obj.send_to_back()
+    obj.equipment.dequip(monster)
   for obj in monster.fighter.inventory:
     obj.x = monster.x
     obj.y = monster.y
@@ -887,7 +1056,7 @@ def check_level_up(who):
     who.fighter.level += 1
     who.fighter.xp -= level_up_xp
     message('Your battle skills grow stronger! You reached level ' + str(who.fighter.level) + '!', libtcod.yellow)
-    if who == player:
+    if who == player or allies.count(who)>0:
       choice = None
       while choice == None:
         choice = menu('Level up! Choose a stat to raise:\n',
@@ -902,10 +1071,22 @@ def check_level_up(who):
       elif choice == 2:
         who.fighter.base_defense += 1
     
-##################
-#G.U.I. FUNCTIONS#
-##################
+################
+#U.I. FUNCTIONS#
+################
 
+def render_map():
+  for y in range(MAP_HEIGHT):
+    for x in range(MAP_WIDTH):
+      visible = libtcod.map_is_in_fov(fov_map, x, y)
+      wall = map[x][y].block_sight
+      if not visible:
+        if map[x][y].explored:
+         libtcod.console_put_char_ex(con, x, y, map[x][y].tile_face, map[x][y].fore_dark, map[x][y].back_dark)
+      else:
+        libtcod.console_put_char_ex(con, x, y, map[x][y].tile_face, map[x][y].fore_light, map[x][y].back_light)
+        map[x][y].explored = True
+        
 def render_all(actor):
   global fov_map
   global fov_recompute
@@ -915,57 +1096,12 @@ def render_all(actor):
     for pov in allies: 
       if pov != actor:
         libtcod.map_compute_fov(fov_map, pov.x, pov.y, pov.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
-        for y in range(MAP_HEIGHT):
-          for x in range(MAP_WIDTH):
-            visible = libtcod.map_is_in_fov(fov_map, x, y)
-            wall = map[x][y].block_sight
-            if not visible:
-              if map[x][y].explored:
-                if wall:
-                  libtcod.console_put_char_ex(con, x, y, chr(173), libtcod.darker_gray, libtcod.black)
-                else:
-                  libtcod.console_put_char_ex(con, x, y, chr(172), libtcod.darker_gray, libtcod.black)
-            else:
-              if wall:
-                libtcod.console_put_char_ex(con, x, y, chr(173), libtcod.white, libtcod.black)
-              else:
-                libtcod.console_put_char_ex(con, x, y, chr(172), libtcod.white, libtcod.black)
-              map[x][y].explored = True
+        render_map()
     if actor != player:
       libtcod.map_compute_fov(fov_map, player.x, player.y, player.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
-      for y in range(MAP_HEIGHT):
-        for x in range(MAP_WIDTH):
-          visible = libtcod.map_is_in_fov(fov_map, x, y)
-          wall = map[x][y].block_sight
-          if not visible:
-            if map[x][y].explored:
-              if wall:
-                libtcod.console_put_char_ex(con, x, y, chr(173), libtcod.darker_gray, libtcod.black)
-              else:
-                libtcod.console_put_char_ex(con, x, y, chr(172), libtcod.darker_gray, libtcod.black)
-          else:
-            if wall:
-              libtcod.console_put_char_ex(con, x, y, chr(173), libtcod.white, libtcod.black)
-            else:
-              libtcod.console_put_char_ex(con, x, y, chr(172), libtcod.white, libtcod.black)
-            map[x][y].explored = True
+      render_map()
     libtcod.map_compute_fov(fov_map, actor.x, actor.y, actor.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
-    for y in range(MAP_HEIGHT):
-      for x in range(MAP_WIDTH):
-        visible = libtcod.map_is_in_fov(fov_map, x, y)
-        wall = map[x][y].block_sight
-        if not visible:
-          if map[x][y].explored:
-            if wall:
-              libtcod.console_put_char_ex(con, x, y, chr(173), libtcod.darker_gray, libtcod.black)
-            else:
-              libtcod.console_put_char_ex(con, x, y, chr(172), libtcod.darker_gray, libtcod.black)
-        else:
-          if wall:
-            libtcod.console_put_char_ex(con, x, y, chr(173), libtcod.white, libtcod.black)
-          else:
-            libtcod.console_put_char_ex(con, x, y, chr(172), libtcod.white, libtcod.black)
-          map[x][y].explored = True
+    render_map()
   for object in objects:
     if object != actor:
       object.draw()
@@ -1384,6 +1520,17 @@ def clear_cursor():
   if libtcod.console_get_char_foreground(con, cursor.x, cursor.y) == libtcod.black:
     libtcod.console_set_char_foreground(con, cursor.x, cursor.y, libtcod.white)
 
+##################
+#STATUS FUNCTIONS#
+##################
+
+def inflict_poison(attacker, target):
+  if libtcod.random_get_int(0, 1, 100) > target.fighter.poison_resist:
+    target.fighter.state = 'poison'
+    target.fighter.state_inflictor = attacker
+    if target == player or allies.count(target) > 0: message(target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.', libtcod.purple)
+    if attacker == player or allies.count(attacker) > 0: message(attacker.name.capitalize() + ' has poisoned ' + target.name + '.', libtcod.fuchsia)
+  
 ############
 #PROJECTILE#
 ############
@@ -1519,9 +1666,10 @@ def main_menu():
       break
 
 def new_game():
-  global player, allies, game_state, game_msgs, dungeon_level, max_d_level
-  fighter_component = Fighter(hp=100, defense=1, power=4, sight=7, inv_max=25, death_function=player_death)
-  player = Object(0, 0, '@', 'Player', libtcod.white, blocks=True, fighter=fighter_component)
+  global player, allies, game_state, game_msgs, dungeon_level, max_d_level, turn
+  turn = 1
+  fighter_component = Fighter(hp=100, defense=1, power=4, sight=7, poison_resist=30, inv_max=25, death_function=player_death)
+  player = Object(0, 0, '@', 'Player', libtcod.white, blocks=True, fighter=fighter_component, gen=turn)
   allies = []
 # Starting Items
   item_component = Item(1, use_function=spell)
@@ -1530,6 +1678,10 @@ def new_game():
   player.fighter.inventory.append(item)
   item_component = Item(5, projectile_bonus = 2, use_function=projectile)
   item = Object(0, 0, chr(150), 'throwing knife', libtcod.light_blue, item=item_component)
+  player.fighter.inventory.append(item)
+  item_component = Item(5, use_function=spell)
+  spell_component = Spell(power=10, spell_range =5 , effect=cast_possess)
+  item = Object(0, 0, chr(151), 'scroll of possession', libtcod.green, item=item_component, spell=spell_component)
   player.fighter.inventory.append(item)
   dungeon_level = 0
   max_d_level = 1
@@ -1554,15 +1706,19 @@ def initialize_fov():
       libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
 
 def play_game():
-  global key, mouse
+  global key, mouse, turn
   player_action = None
   key = libtcod.Key()
   mouse = libtcod.Mouse()
+  player_check_state = True
   while not libtcod.console_is_window_closed():
     fov_recompute = True
     libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, key, mouse)
     libtcod.console_flush()
     check_level_up(player)
+    if player_check_state == True:
+      player.fighter.check_state()
+      player_check_state = False
     render_all(player)
     libtcod.map_compute_fov(fov_map, player.x, player.y, player.fighter.sight, FOV_LIGHT_WALLS, FOV_ALGO)
     player_action = handle_keys(player)
@@ -1572,12 +1728,16 @@ def play_game():
       save_game()
       break
     if game_state == 'playing' and player_action != 'didnt-take-turn':
+      
       for object in allies:
         if object.ai:
           object.ai.take_turn()
       for object in objects:
         if object.ai:
+          object.fighter.check_state()
           object.ai.take_turn()
+      player_check_state = True
+      turn += 1
 
 def save_game():
   file = shelve.open('savegame', 'n')
@@ -1592,11 +1752,12 @@ def save_game():
     file['stairs_up_index'] = objects.index(stairs_up)
   file['dungeon_level'] = dungeon_level
   file['max_d_level'] = max_d_level
+  file['turn'] = turn
   file['allies'] = allies
   file.close()
 
 def load_game():
-  global map, rooms, objects, player, allies, game_msgs, game_state, stairs_down, stairs_up, dungeon_level, max_d_level
+  global map, rooms, objects, player, allies, game_msgs, game_state, stairs_down, stairs_up, dungeon_level, max_d_level, turn
   file = shelve.open('savegame', 'r')
   map = file['map']
   rooms = file['rooms']
@@ -1608,6 +1769,7 @@ def load_game():
   stairs_down = objects[file['stairs_down_index']]
   dungeon_level = file['dungeon_level']
   max_d_level = file['max_d_level']
+  turn = file['turn']
   if dungeon_level >= 1:
     stairs_up = objects[file['stairs_up_index']]
   file.close()
