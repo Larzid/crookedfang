@@ -1,11 +1,11 @@
-# Generic-RL
+# Crooked Fang
 
 This is a little game made in python + libtcod following the tutorial at:
 http://www.roguebasin.com/index.php?title=Complete_Roguelike_Tutorial,_using_python%2Blibtcod
 
-It's name is Generic RL because I haven't decided what will it be about, most NPCs and items are the same as those from the tutorial or with little modification (This will eventually change).
+Better working title but still haven't decided what will it be about, most NPCs and items are the same as those from the tutorial or with little modification (This will eventually change).
 
-What I have concentrated on so far is on game mechanics which mostly has been adding basic stuff like stackable items and colored menus, but there's some stuff a little more instesting, here's the list of what has been done:
+What I have concentrated on so far is on game mechanics which mostly has been adding basic stuff like stackable items and colored menus, here's the list of what has been done:
 
 - Custom side panel for stats & message panel at the bottom
 - Added sight element to fighter class for FOV calculations in all fighter objects
