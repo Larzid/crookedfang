@@ -252,7 +252,7 @@ class Fighter:
         function = self.death_function
         if function is not None:
           function(self.owner, attacker)
-        attacker.fighter.xp += self.xp_bonus
+        if attacker is not None: attacker.fighter.xp += self.xp_bonus
   def attack(self, target):
     damage = self.power - target.fighter.defense
     if damage > 0:
@@ -501,7 +501,7 @@ class EquippingMonster:
               obj.item.use(monster)
               if obj.equipment.ammo and obj.equipment.ammo == 'arrow':
                 item_component = Item(15, ammo='arrow', projectile_bonus = 1)
-                item = Object(0, 0, chr(147), 'arrow', libtcod.dark_sepia, item=item_component)
+                item = Object(0, 0, chr(147), 'arrow', libtcod.dark_gray, item=item_component)
                 monster.fighter.inventory.append(item)
           elif monster.fighter.equipment[obj.equipment.slot] is None:
             obj.item.pick_up(monster)
@@ -1019,7 +1019,8 @@ def move_or_attack(actor, dx, dy):
 
 def player_death(player, attacker):
   global game_state
-  message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
+  if attacker is not None: message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
+  else: message('You died of severe battle wounds.', libtcod.red)
   game_state = 'dead'
   player.char = '%'
   player.color = libtcod.dark_red
@@ -1031,12 +1032,9 @@ def monster_death(monster, attacker):
   for obj in eq:
     obj.equipment.dequip(monster)
   for obj in monster.fighter.inventory:
-    obj.x = monster.x
-    obj.y = monster.y
-    objects.append(obj)
-    monster.fighter.inventory.remove(obj)
-    obj.send_to_back()
-  message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
+    obj.item.drop(monster)
+  if attacker is not None: message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
+  else: message(monster.name.capitalize() + ' died of severe battle wounds.', libtcod.orange)
   monster.char = '%'
   monster.color = libtcod.dark_red
   monster.blocks = False
@@ -1645,7 +1643,7 @@ def main_menu():
   while not libtcod.console_is_window_closed():
     libtcod.image_blit_2x(img, 0, 0, 0)
     libtcod.console_set_default_foreground(0, libtcod.light_yellow)
-    libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT/2-4, libtcod.BKGND_NONE, libtcod.CENTER, 'GENERIC ROGUELIKE')
+    libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT/2-4, libtcod.BKGND_NONE, libtcod.CENTER, 'CROOKED FANG')
     libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT-2, libtcod.BKGND_NONE, libtcod.CENTER, 'By Larzid')
     options =[('New Game', libtcod.green), ('Continue Game', libtcod.white), ('Controls', libtcod.sky), ('Quit', libtcod.red)]
     choice = menu('', options, 18)
@@ -1867,7 +1865,7 @@ def load_level(filename):
 ######
 
 libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
-libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Generic Roguelike', False)
+libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Crooked Fang', False)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 libtcod.sys_set_fps(LIMIT_FPS)
 side_panel = libtcod.console_new(SCREEN_WIDTH-MAP_WIDTH, MAP_HEIGHT)
