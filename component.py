@@ -1,12 +1,13 @@
 import libtcodpy as libtcod
 
 class Fighter:
-  def __init__(self, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
-    self.base_max_hp = hp
+  def __init__(self, faction, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
+    self.faction = faction
+    self.max_hp = hp
     self.hp = hp
-    self.base_defense = defense
-    self.base_power = power
-    self.base_sight = sight
+    self.defense = defense
+    self.power = power
+    self.sight = sight
     self.poison_resist = poison_resist
     if state == None: state = 'normal'
     self.state = state
@@ -24,3 +25,4 @@ class Fighter:
     self.death_function = death_function
     self.last_hurt = last_hurt
     self.nat_atk_effect = nat_atk_effect
+  

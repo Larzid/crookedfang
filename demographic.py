@@ -1,5 +1,7 @@
 ﻿import libtcodpy as libtcod
 import classes
+import component
+import ai
 import function
 
 def gen_creature(room=None, x=None, y=None):
@@ -7,20 +9,25 @@ def gen_creature(room=None, x=None, y=None):
     x = libtcod.random_get_int(0, room.x1, room.x2)
     y = libtcod.random_get_int(0, room.y1, room.y2)
   if libtcod.random_get_int(0, 0, 100) < 80:
-    creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True)
+    fighter_component = component.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20)
+    ai_component = ai.BasicMonster()
+    creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component)
   else:
-    creature = classes.Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True)
+    fighter_component = component.Fighter(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30)
+    ai_component = ai.BasicMonster()
+    creature = classes.Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True, fighter=fighter_component, ai=ai_component)
   return creature
 
 def populate_room(room, num_monsters):
   creature_list = []
   for i in range(num_monsters):
-    creature_list.append(gen_creature(room))
+    creature = gen_creature(room)
+    creature_list.append(creature)
   return creature_list
 
 def populate_level(room_list, max_room_monsters):
-  creature_list = []
+  final_list = []
   num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
   for room in room_list:
-    creature_list.extend(populate_room(room, num_monsters))
-  return creature_list
+    final_list.extend(populate_room(room, num_monsters))
+  return final_list

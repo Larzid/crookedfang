@@ -1,7 +1,8 @@
 ﻿# This is the main game file and it will be deliberately short.
-import libtcodpy as libtcod # "The Doryen Library" v1.6.1 Source: https://bitbucket.org/libtcod/libtcod
-import classes #Here are the main game classes (Tile, Object and Rect).
+import libtcodpy as libtcod # "The Doryen Library" v1.5.1 Source: https://bitbucket.org/libtcod/libtcod
+import classes #Here are the classes shared between modules (Tile, Object and Rect).
 import component #The game components are defined here.
+import ai #Artificial Inteligence classes.
 import cartographer #This handles the map object (tecniaclly a class but it deserves special treatment).
 import demographic #Functions to generate creatures and items and populate areas.
 import render #All related to displaying stuff on the screen.
@@ -31,9 +32,10 @@ MAX_ROOMS = 30
 MAX_ROOM_MONSTERS = 3
 
 def render_all(): # Call the functions to draw everything in the screen.
+  function.fov_recompute(player, level_map)
   render.map(level_map)
   for object in objects:
-    render.draw(object)
+    render.draw(object, level_map)
 
 # Initialize the game screen.
 libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
@@ -42,7 +44,8 @@ render.init_map_console(MAP_WIDTH, MAP_HEIGHT) # Create an off-screen console fo
 libtcod.sys_set_fps(LIMIT_FPS)
 
 # Player character initialization.
-player = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True)
+fighter_component = component.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30)
+player = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
 objects = [player]
 
 # Create level and populate it.
@@ -53,8 +56,8 @@ rooms = level_map.make_arena()
 objects.extend(demographic.populate_level(rooms, MAX_ROOM_MONSTERS))
 
 # Initialize field of view.
-fov_map = render.make_fov_map(level_map)
-render.fov_recompute(player)
+level_map.fov = level_map.make_fov_map()
+function.fov_recompute(player, level_map)
 
 game_state = 'playing'
 player_action = None
@@ -64,12 +67,12 @@ while not libtcod.console_is_window_closed():
   render_all()
   render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, player, level_map.width, level_map.height)
   libtcod.console_flush()
+  player_action = get_input.handle_keys(game_state, player, level_map, objects)
   for object in objects:
     render.clear(object)
-  player_action = get_input.handle_keys(game_state, player, level_map, objects)
-  if game_state == 'playing' and player_action != 'didnt-take-turn':
-    for object in objects:
-      if object != player:
-        print 'The ' + object.name + ' growls!'
   if player_action == 'exit':
     break
+  if game_state == 'playing' and player_action != 'didnt-take-turn':
+    for object in objects:
+      if object.ai:
+        object.ai.take_turn(level_map, objects)

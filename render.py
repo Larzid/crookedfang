@@ -1,27 +1,12 @@
 import libtcodpy as libtcod
 
-FOV_ALGO = 0
-FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 10
-
 def init_map_console(width, height):
   global con, con_width, con_height
   (con_width, con_height) = (width, height)
   con = libtcod.console_new(con_width, con_height)
 
-def make_fov_map(map):
-  global fov_map
-  fov_map = libtcod.map_new(map.width, map.height)
-  for y in range(map.height):
-    for x in range(map.width):
-      libtcod.map_set_properties(fov_map, x, y, not map.topography[x][y].block_sight, not map.topography[x][y].blocked)
-  return fov_map
-
-def fov_recompute(actor):
-  libtcod.map_compute_fov(fov_map, actor.x, actor.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
-
-def draw(object):
-  if libtcod.map_is_in_fov(fov_map, object.x, object.y):
+def draw(object, level_map):
+#  if libtcod.map_is_in_fov(level_map.fov, object.x, object.y):
     libtcod.console_set_default_foreground(con, object.color)
     libtcod.console_put_char(con, object.x, object.y, object.char, libtcod.BKGND_NONE)
 
@@ -31,11 +16,11 @@ def clear(object):
 def map(map):
   for y in range(map.height):
     for x in range(map.width):
-      visible = libtcod.map_is_in_fov(fov_map, x, y)
+      visible = libtcod.map_is_in_fov(map.fov, x, y)
       wall = map.topography[x][y].block_sight
       if not visible:
-        if map.topography[x][y].explored:
-          libtcod.console_put_char_ex(con, x, y, map.topography[x][y].tile_face, map.topography[x][y].fore_dark, map.topography[x][y].back_dark)
+#        if map.topography[x][y].explored:
+        libtcod.console_put_char_ex(con, x, y, map.topography[x][y].tile_face, map.topography[x][y].fore_dark, map.topography[x][y].back_dark)
       else:
         libtcod.console_put_char_ex(con, x, y, map.topography[x][y].tile_face, map.topography[x][y].fore_light, map.topography[x][y].back_light)
         map.topography[x][y].explored = True

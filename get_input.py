@@ -1,5 +1,6 @@
 import libtcodpy as libtcod
 import render
+import function
 
 def handle_keys(game_state, actor, map, object_list):
   key = libtcod.console_wait_for_keypress(True)
@@ -16,7 +17,7 @@ def handle_keys(game_state, actor, map, object_list):
       move_or_attack(actor, map, -1, 0, object_list)
     elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
       move_or_attack(actor, map, 1, 0, object_list)
-    else: return 'didn-take-turn'
+    else: return 'didnt-take-turn'
 
 def move_or_attack(actor, map, dx, dy, object_list):
   x = actor.x + dx
@@ -30,4 +31,4 @@ def move_or_attack(actor, map, dx, dy, object_list):
     print 'The ' + target.name + ' laughs at your attacks!'
   else:
     actor.move(map, dx, dy, object_list)
-    render.fov_recompute(actor)
+    function.fov_recompute(actor, map)

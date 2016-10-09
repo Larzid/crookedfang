@@ -32,6 +32,13 @@ class Map:
     self.width = width
     self.height = height
     self.topography = []
+    self.fov = None
+  def make_fov_map(self):
+    fov_map = libtcod.map_new(self.width, self.height)
+    for y in range(self.height):
+      for x in range(self.width):
+        libtcod.map_set_properties(fov_map, x, y, not self.topography[x][y].block_sight, not self.topography[x][y].blocked)
+    return fov_map
   def set_tile(self, x, y, blocked, block_sight, tile_face, back_light, back_dark, fore_light, fore_dark):
     self.topography[x][y].blocked = blocked
     self.topography[x][y].block_sight = block_sight
