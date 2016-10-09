@@ -1,6 +1,31 @@
 ﻿import libtcodpy as libtcod
-import classes
+
 import function
+
+class Tile:
+  def __init__(self, blocked, block_sight = None, tile_face=None, back_light=None, back_dark=None, fore_light=None, fore_dark=None):
+    self.explored = False
+    self.blocked = blocked
+    if block_sight is None: block_sight = blocked
+    self.block_sight = block_sight
+    self.tile_face = tile_face
+    self.back_light = back_light
+    self.back_dark = back_dark
+    self.fore_light = fore_light
+    self.fore_dark = fore_dark
+
+class Rect:
+  def __init__(self, x, y, w, h):
+    self.x1 = x
+    self.y1 = y
+    self.x2 = x + w
+    self.y2 = y + h
+  def center(self):
+    center_x = (self.x1 + self.x2) / 2
+    center_y = (self.y1 + self.y2) / 2
+    return (center_x, center_y)
+  def intersect(self, other):
+    return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
 
 class Map:
   def __init__(self, width=80, height=45):
@@ -20,7 +45,7 @@ class Map:
   def dungeon_wall(self, x, y):
     self.set_tile(x, y, blocked=True, block_sight=True, tile_face=chr(173), back_light=libtcod.black, back_dark=libtcod.black, fore_light=libtcod.white, fore_dark=libtcod.dark_gray)
   def make_arena(self):
-    self.topography = [[ classes.Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia) for y in range(self.height) ] for x in range(self.width) ]
+    self.topography = [[ Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia) for y in range(self.height) ] for x in range(self.width) ]
     for x in range(self.width):
       self.dungeon_wall(x, 0)
       self.dungeon_wall(x, self.height-1)
@@ -31,10 +56,10 @@ class Map:
     self.dungeon_wall(self.width/2 + 10, self.height/2 - 10)
     self.dungeon_wall(self.width/2 - 10, self.height/2 + 10)
     self.dungeon_wall(self.width/2 + 10, self.height/2 + 10)
-    room = [classes.Rect(0, 0, self.width - 1, self.height - 1)]
+    room = [Rect(0, 0, self.width - 1, self.height - 1)]
     return room
   def make_dungeon(self, max_rooms, min_room_size, max_room_size):
-    self.topography = [[ classes.Tile(blocked=True, block_sight=True, tile_face=chr(173), back_light=libtcod.black, back_dark=libtcod.black, fore_light=libtcod.white, fore_dark=libtcod.dark_gray) for y in range(self.height) ] for x in range(self.width) ]
+    self.topography = [[ Tile(blocked=True, block_sight=True, tile_face=chr(173), back_light=libtcod.black, back_dark=libtcod.black, fore_light=libtcod.white, fore_dark=libtcod.dark_gray) for y in range(self.height) ] for x in range(self.width) ]
     rooms = []
     num_rooms = 0
     for r in range(max_rooms):
@@ -42,7 +67,7 @@ class Map:
       h = libtcod.random_get_int(0, min_room_size, max_room_size)
       x = libtcod.random_get_int(0, 0, self.width - w - 1)
       y = libtcod.random_get_int(0, 0, self.height - h - 1)
-      new_room = classes.Rect(x, y, w, h)
+      new_room = Rect(x, y, w, h)
       failed = False
       for other_room in rooms:
         if new_room.intersect(other_room):
