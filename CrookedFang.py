@@ -1080,7 +1080,7 @@ def render_map():
       wall = map[x][y].block_sight
       if not visible:
         if map[x][y].explored:
-         libtcod.console_put_char_ex(con, x, y, map[x][y].tile_face, map[x][y].fore_dark, map[x][y].back_dark)
+          libtcod.console_put_char_ex(con, x, y, map[x][y].tile_face, map[x][y].fore_dark, map[x][y].back_dark)
       else:
         libtcod.console_put_char_ex(con, x, y, map[x][y].tile_face, map[x][y].fore_light, map[x][y].back_light)
         map[x][y].explored = True
