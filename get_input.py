@@ -28,7 +28,7 @@ def move_or_attack(actor, map, dx, dy, object_list):
       target = object
       break
   if target is not None:
-    print 'The ' + target.name + ' laughs at your attacks!'
+    actor.fighter.attack(target)
   else:
     actor.move(map, dx, dy, object_list)
     function.fov_recompute(actor, map)

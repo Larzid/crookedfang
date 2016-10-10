@@ -25,4 +25,59 @@ class Fighter:
     self.death_function = death_function
     self.last_hurt = last_hurt
     self.nat_atk_effect = nat_atk_effect
-  
+  @property
+  def secondary_effect(self):
+#    if self.equipment is None or (self.equipment['good hand'] is None and self.equipment['off hand'] is None):
+    return [self.nat_atk_effect]
+#    else:
+#      sec_effect = []
+#      if self.equipment['good hand'] is not None:
+#        sec_effect.append(self.equipment['good hand'].equipment.bonus_effect)
+#      if self.equipment['off hand'] is not None:
+#        sec_effect.append(self.equipment['off hand'].equipment.bonus_effect)
+#      return sec_effect
+  def take_damage(self, attacker, damage):
+    if damage > 0:
+      self.hp -= damage
+#      self.last_hurt = turn
+      if self.hp <= 0:
+        function = self.death_function
+        if function is not None:
+          function(self.owner, attacker)
+#        if attacker is not None: attacker.fighter.xp += self.xp_bonus
+  def attack(self, target):
+    damage = self.power - target.fighter.defense
+    if damage > 0:
+#      if target == player:
+#        print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.'#, libtcod.sepia)
+#      else:
+      print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.'#, libtcod.green)
+      target.fighter.take_damage(self.owner, damage)
+      if target.fighter is not None:
+        effect_list = self.secondary_effect
+        if len(effect_list)>0:
+          for effect in effect_list:
+            if effect is not None:
+              effect(self.owner, target)
+    else:
+      print self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no efect!'#, libtcod.red)
+  def heal(self, amount):
+    self.hp += amount
+    if self.hp > self.max_hp:
+      self.hp = self.max_hp
+  def check_state(self):
+    if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
+      self.heal(1)
+    if self.state == 'poison':
+      self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
+#      if self.owner == player or allies.count(self.owner) > 0:
+      print self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.'#, libtcod.red)
+#      if self.state_inflictor == player or allies.count(self.state_inflictor) > 0:
+#        message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
+      if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
+#        if self.state_inflictor == player or allies.count(self.state_inflictor) > 0:
+        print self.owner.name.capitalize() + ' is no longer poisoned.'#, libtcod.orange)
+        self.state = 'normal'
+        self.state_inflictor = None
+#        if self.owner == player or allies.count(self.owner) > 0: 
+#          message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)

@@ -67,6 +67,7 @@ while not libtcod.console_is_window_closed():
   render_all()
   render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, player, level_map.width, level_map.height)
   libtcod.console_flush()
+  player.fighter.check_state()
   player_action = get_input.handle_keys(game_state, player, level_map, objects)
   for object in objects:
     render.clear(object)
@@ -75,4 +76,5 @@ while not libtcod.console_is_window_closed():
   if game_state == 'playing' and player_action != 'didnt-take-turn':
     for object in objects:
       if object.ai:
+        object.fighter.check_state()
         object.ai.take_turn(level_map, objects)

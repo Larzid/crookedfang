@@ -8,10 +8,15 @@ def gen_creature(room=None, x=None, y=None):
   if room is not None and x is None:
     x = libtcod.random_get_int(0, room.x1, room.x2)
     y = libtcod.random_get_int(0, room.y1, room.y2)
-  if libtcod.random_get_int(0, 0, 100) < 80:
+  choice = libtcod.random_get_int(0, 0, 100)
+  if choice <= 50:
     fighter_component = component.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component)
+  elif choice <= 80:
+    fighter_component = component.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, nat_atk_effect=function.inflict_poison)
+    ai_component = ai.BasicMonster()
+    creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
   else:
     fighter_component = component.Fighter(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30)
     ai_component = ai.BasicMonster()

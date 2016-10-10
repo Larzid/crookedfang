@@ -18,8 +18,7 @@ class BasicMonster:
       if monster.distance_to(target) >= 2:
         monster.move_astar(level_map, target, object_list)
       elif target.fighter.hp > 0:
-        print 'The ' + self.owner.name + ' punches you!'
-#        monster.fighter.attack(target)
+        monster.fighter.attack(target)
     else:
       movement = False
       while movement is False:
@@ -27,4 +26,3 @@ class BasicMonster:
         if not function.is_blocked(level_map, monster.x + x, monster.y + y, object_list):
           movement = True
           monster.move(level_map, x, y, object_list)
-    print 'The ' + self.owner.name + ' growls!'
