@@ -1,6 +1,12 @@
 import libtcodpy as libtcod
 import globals
 
+def all(): # Call the functions to draw everything in the screen.
+  globals.fov_recompute(globals.player())
+  lvl()
+  for object in globals.objects():
+    draw(object)
+
 def init_map_console(width, height):
   global con, con_width, con_height
   (con_width, con_height) = (width, height)

@@ -31,12 +31,6 @@ MAX_ROOMS = 30
 # This is used by demographic to populate rooms.
 MAX_ROOM_MONSTERS = 7
 
-def render_all(): # Call the functions to draw everything in the screen.
-  globals.fov_recompute(globals.player())
-  render.lvl()
-  for object in globals.objects():
-    render.draw(object)
-
 # Initialize the game screen.
 libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Crooked Fang', False) 
@@ -57,7 +51,7 @@ player_action = None
 
 # Main loop.
 while not libtcod.console_is_window_closed():
-  render_all()
+  render.all()
   render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, globals.player())
   libtcod.console_flush()
   globals.player().fighter.check_state()
