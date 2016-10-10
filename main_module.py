@@ -50,14 +50,9 @@ objects = [player]
 
 # Create level and populate it.
 level_map = cartographer.Map(width=MAP_WIDTH, height=MAP_HEIGHT)
-#rooms = level_map.make_dungeon(MAX_ROOMS, ROOM_MAX_SIZE, ROOM_MIN_SIZE)
-rooms = level_map.make_arena()
-(player.x, player.y) = rooms[0].center()
-objects.extend(demographic.populate_level(rooms, MAX_ROOM_MONSTERS))
-
-# Initialize field of view.
-level_map.fov = level_map.make_fov_map()
-function.fov_recompute(player, level_map)
+#level_map =cartographer.Map(width=MAP_WIDTH, height=MAP_HEIGHT, map_function=cartographer.make_dungeon, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room_size=ROOM_MAX_SIZE)
+(player.x, player.y) = level_map.rooms[0].center()
+objects.extend(demographic.populate_level(level_map.rooms, MAX_ROOM_MONSTERS))
 
 game_state = 'playing'
 player_action = None
