@@ -6,8 +6,8 @@ import function
 
 def gen_creature(room=None, x=None, y=None):
   if room is not None and x is None:
-    x = libtcod.random_get_int(0, room.x1, room.x2)
-    y = libtcod.random_get_int(0, room.y1, room.y2)
+    x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
+    y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
   choice = libtcod.random_get_int(0, 0, 100)
   if choice <= 50:
     fighter_component = component.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20)

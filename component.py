@@ -81,3 +81,28 @@ class Fighter:
         self.state_inflictor = None
 #        if self.owner == player or allies.count(self.owner) > 0: 
 #          message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
+
+def player_death(player, attacker):
+  if attacker is not None: print 'You were killed by ' + attacker.name.capitalize() + '!'#, libtcod.red)
+  else: print 'You died of severe battle wounds.'#, libtcod.red)
+  set_state('dead')
+  player.char = '%'
+  player.color = libtcod.dark_red
+#  for f in glob.glob('lvl*'):
+#    os.remove(f)
+
+def monster_death(monster, attacker):
+#  eq = [piece for piece in monster.fighter.equipment.values() if piece is not None]
+#  for obj in eq:
+#    obj.equipment.dequip(monster)
+#  for obj in monster.fighter.inventory:
+#    obj.item.drop(monster)
+  if attacker is not None: print monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!'#, libtcod.orange)
+  else: print monster.name.capitalize() + ' died of severe battle wounds.'#, libtcod.orange)
+  monster.char = '%'
+  monster.color = libtcod.dark_red
+  monster.blocks = False
+  monster.fighter = None
+  monster.ai = None
+  monster.name = 'remains of ' + monster.name
+  monster.send_to_back()
