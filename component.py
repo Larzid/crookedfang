@@ -1,5 +1,5 @@
 import libtcodpy as libtcod
-import function
+import globals
 
 class Fighter:
   def __init__(self, faction, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
@@ -23,7 +23,7 @@ class Fighter:
     if inv_max == None: inv_max = 1
     self.inv_max = inv_max
     self.equipment = {'good hand':None, 'off hand':None, 'head':None, 'torso':None, 'feet':None}
-    self.death_function = death_function
+    self.death_globals = death_function
     self.last_hurt = last_hurt
     self.nat_atk_effect = nat_atk_effect
   @property
@@ -42,14 +42,14 @@ class Fighter:
       self.hp -= damage
 #      self.last_hurt = turn
       if self.hp <= 0:
-        function = self.death_function
-        if function is not None:
-          function(self.owner, attacker)
+        globals = self.death_globals
+        if globals is not None:
+          globals(self.owner, attacker)
 #        if attacker is not None: attacker.fighter.xp += self.xp_bonus
   def attack(self, target):
     damage = self.power - target.fighter.defense
     if damage > 0:
-#      if target == player:
+#      if target == globals.player():
 #        print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.'#, libtcod.sepia)
 #      else:
       print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.'#, libtcod.green)
@@ -70,25 +70,25 @@ class Fighter:
     if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.state == 'poison':
-#      if self.owner == player or allies.count(self.owner) > 0:
+#      if self.owner == globals.player() or allies.count(self.owner) > 0:
       print self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.'#, libtcod.red)
-#      if self.state_inflictor == player or allies.count(self.state_inflictor) > 0:
+#      if self.state_inflictor == globals.player() or allies.count(self.state_inflictor) > 0:
 #        message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
       self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
       if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
-#        if self.state_inflictor == player or allies.count(self.state_inflictor) > 0:
+#        if self.state_inflictor == globals.player() or allies.count(self.state_inflictor) > 0:
         print self.owner.name.capitalize() + ' is no longer poisoned.'#, libtcod.orange)
         self.state = 'normal'
         self.state_inflictor = None
-#        if self.owner == player or allies.count(self.owner) > 0: 
+#        if self.owner == globals.player() or allies.count(self.owner) > 0: 
 #          message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
 
 def player_death(player, attacker):
   if attacker is not None: print 'You were killed by ' + attacker.name.capitalize() + '!'#, libtcod.red)
   else: print 'You died of severe battle wounds.'#, libtcod.red)
-  function.set_game_state('dead')
-  player.char = '%'
-  player.color = libtcod.dark_red
+  globals.set_game_state('dead')
+  globals.player().char = '%'
+  globals.player().color = libtcod.dark_red
 #  for f in glob.glob('lvl*'):
 #    os.remove(f)
 

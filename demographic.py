@@ -2,7 +2,7 @@
 import classes
 import component
 import ai
-import function
+import globals
 
 def gen_creature(room=None, x=None, y=None):
   if room is not None and x is None:
@@ -10,7 +10,7 @@ def gen_creature(room=None, x=None, y=None):
     y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
   choice = libtcod.random_get_int(0, 0, 100)
   if choice <= 50:
-    fighter_component = component.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, death_function=component.monster_death, nat_atk_effect=function.inflict_poison)
+    fighter_component = component.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, death_function=component.monster_death, nat_atk_effect=globals.inflict_poison)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
   elif choice <= 80:
@@ -30,9 +30,9 @@ def populate_room(room, num_monsters):
     creature_list.append(creature)
   return creature_list
 
-def populate_level(room_list, max_room_monsters):
+def populate_level(max_room_monsters):
   final_list = []
-  num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
-  for room in room_list:
+  for room in globals.map().rooms:
+    num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
     final_list.extend(populate_room(room, num_monsters))
   return final_list

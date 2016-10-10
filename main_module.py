@@ -7,7 +7,7 @@ import cartographer #This handles the map object (tecniaclly a class but it dese
 import demographic #Functions to generate creatures and items and populate areas.
 import render #All related to displaying stuff on the screen.
 import get_input #Self explainatory.
-import function #Here live some functions useful in many places
+import globals #Here live some functions useful in many places
 
 LIMIT_FPS = 20
 
@@ -32,10 +32,10 @@ MAX_ROOMS = 30
 MAX_ROOM_MONSTERS = 7
 
 def render_all(): # Call the functions to draw everything in the screen.
-  function.fov_recompute(function.player(), level_map)
-  render.map(level_map)
-  for object in function.objects():
-    render.draw(object, level_map)
+  globals.fov_recompute(globals.player())
+  render.lvl()
+  for object in globals.objects():
+    render.draw(object)
 
 # Initialize the game screen.
 libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
@@ -44,31 +44,31 @@ render.init_map_console(MAP_WIDTH, MAP_HEIGHT) # Create an off-screen console fo
 libtcod.sys_set_fps(LIMIT_FPS)
 
 # Player character initialization.
-function.init_player('new')
+globals.init_player('new')
 
 # Create level and populate it.
-level_map = cartographer.Map(width=MAP_WIDTH, height=MAP_HEIGHT)
-#level_map =cartographer.Map(width=MAP_WIDTH, height=MAP_HEIGHT, map_function=cartographer.make_dungeon, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room_size=ROOM_MAX_SIZE)
-(function.player().x, function.player().y) = level_map.rooms[0].center()
-function.objects().extend(demographic.populate_level(level_map.rooms, MAX_ROOM_MONSTERS))
+globals.init_map('new', width=MAP_WIDTH, height=MAP_HEIGHT)
+#globals.init_map('new', width=MAP_WIDTH, height=MAP_HEIGHT, map_function=cartographer.make_dungeon, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room_size=ROOM_MAX_SIZE)
+(globals.player().x, globals.player().y) = globals.map().rooms[0].center()
+globals.objects().extend(demographic.populate_level(MAX_ROOM_MONSTERS))
 
-function.set_game_state('playing')
+globals.set_game_state('playing')
 player_action = None
 
 # Main loop.
 while not libtcod.console_is_window_closed():
   render_all()
-  render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, function.player(), level_map.width, level_map.height)
+  render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, globals.player())
   libtcod.console_flush()
-  function.player().fighter.check_state()
-  player_action = get_input.handle_keys(function.get_game_state(), function.player(), level_map, function.objects())
-  for object in function.objects():
+  globals.player().fighter.check_state()
+  player_action = get_input.handle_keys(globals.player())
+  for object in globals.objects():
     render.clear(object)
   if player_action == 'exit':
     break
-  if function.get_game_state() == 'playing' and player_action != 'didnt-take-turn':
-    for object in function.objects():
+  if globals.get_game_state() == 'playing' and player_action != 'didnt-take-turn':
+    for object in globals.objects():
       if object.fighter:
         object.fighter.check_state()
       if object.ai:
-        object.ai.take_turn(level_map, function.objects())
+        object.ai.take_turn()

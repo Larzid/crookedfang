@@ -1,12 +1,12 @@
 ﻿import libtcodpy as libtcod
-import function
+import globals
 
 class BasicMonster:
-  def take_turn(self, level_map, object_list):
+  def take_turn(self):
     monster = self.owner
-    function.fov_recompute(monster, level_map)
+    globals.fov_recompute(monster)
     target = None
-    enemies = [creature for creature in object_list if creature.fighter and creature.fighter.faction != monster.fighter.faction and libtcod.map_is_in_fov(level_map.fov, creature.x, creature.y)]
+    enemies = [creature for creature in globals.objects() if creature.fighter and creature.fighter.faction != monster.fighter.faction and libtcod.map_is_in_fov(globals.map().fov, creature.x, creature.y)]
     if len(enemies) > 0:
       closest_dist = monster.fighter.sight + 1
       for object in enemies:
@@ -16,13 +16,13 @@ class BasicMonster:
           closest_dist = dist
     if target is not None:
       if monster.distance_to(target) >= 2:
-        monster.move_astar(level_map, target, object_list)
+        monster.move_astar(target)
       elif target.fighter.hp > 0:
         monster.fighter.attack(target)
     else:
       movement = False
       while movement is False:
         (x, y) = (libtcod.random_get_int(0, -1, 1), libtcod.random_get_int(0, -1, 1))
-        if not function.is_blocked(level_map, monster.x + x, monster.y + y, object_list):
+        if not globals.is_blocked(monster.x + x, monster.y + y):
           movement = True
-          monster.move(level_map, x, y, object_list)
+          monster.move(x, y)
