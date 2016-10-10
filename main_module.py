@@ -34,14 +34,13 @@ MAX_ROOM_MONSTERS = 7
 # Initialize the game screen.
 libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Crooked Fang', False) 
-render.init_map_console(MAP_WIDTH, MAP_HEIGHT) # Create an off-screen console for the map.
 libtcod.sys_set_fps(LIMIT_FPS)
 
 # Player character initialization.
 globals.init_player('new')
 
 # Create level and populate it.
-globals.init_map('new', width=MAP_WIDTH, height=MAP_HEIGHT)
+globals.init_map('new')
 #globals.init_map('new', width=MAP_WIDTH, height=MAP_HEIGHT, map_function=cartographer.make_dungeon, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room_size=ROOM_MAX_SIZE)
 (globals.player().x, globals.player().y) = globals.map().rooms[0].center()
 globals.objects().extend(demographic.populate_level(MAX_ROOM_MONSTERS))

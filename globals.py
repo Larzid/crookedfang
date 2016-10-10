@@ -1,7 +1,8 @@
-import libtcodpy as libtcod
+﻿import libtcodpy as libtcod
 import component
 import classes
 import cartographer
+import render
 
 def init_player(action):
   global player_object, objects_list
@@ -22,11 +23,12 @@ def init_map(action, width=None, height=None, map_function=None, max_rooms=None,
   global level_map
   if action == 'new':
     if map_function is None:
-      level_map = cartographer.Map(width, height)
+      level_map = cartographer.Map()
     elif max_rooms == None:
       level_map = cartographer.Map(width, height, map_function)
     else:
       level_map = cartographer.Map(width, height, map_function, max_rooms, min_room_size, max_room_size)
+  render.init_map_console() # Create an off-screen console for the map.
 
 def map():
   level = level_map

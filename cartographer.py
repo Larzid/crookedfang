@@ -27,16 +27,16 @@ class Rect:
     return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
 
 class Map:
-  def __init__(self, width=65, height=53, map_globals=None, max_rooms=None, min_room_size=None, max_room_size=None):
+  def __init__(self, width=65, height=53, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
     self.width = width
     self.height = height
     self.topography = []
-    if map_globals is None:
+    if map_function is None:
       self.rooms = make_arena(self)
     elif max_rooms is None:
-      self.rooms = map_globals(self)
+      self.rooms = map_function(self)
     else:
-      self.rooms = map_globals(self, max_rooms, min_room_size, max_room_size)
+      self.rooms = map_function(self, max_rooms, min_room_size, max_room_size)
     self.fov = self.make_fov_map()
   def make_fov_map(self):
     fov_map = libtcod.map_new(self.width, self.height)

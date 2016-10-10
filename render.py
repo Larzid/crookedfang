@@ -5,11 +5,13 @@ def all(): # Call the functions to draw everything in the screen.
   globals.fov_recompute(globals.player())
   lvl()
   for object in globals.objects():
-    draw(object)
+    if object != globals.player():
+      draw(object)
+  draw(globals.player())
 
-def init_map_console(width, height):
+def init_map_console():
   global con, con_width, con_height
-  (con_width, con_height) = (width, height)
+  (con_width, con_height) = (globals.map().width, globals.map().height)
   con = libtcod.console_new(con_width, con_height)
 
 def draw(object):

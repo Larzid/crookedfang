@@ -1,4 +1,4 @@
-import libtcodpy as libtcod
+﻿import libtcodpy as libtcod
 import render
 import globals
 
