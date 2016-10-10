@@ -1,4 +1,5 @@
 import libtcodpy as libtcod
+import function
 
 class Fighter:
   def __init__(self, faction, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
@@ -69,11 +70,11 @@ class Fighter:
     if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.state == 'poison':
-      self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
 #      if self.owner == player or allies.count(self.owner) > 0:
       print self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.'#, libtcod.red)
 #      if self.state_inflictor == player or allies.count(self.state_inflictor) > 0:
 #        message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
+      self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
       if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
 #        if self.state_inflictor == player or allies.count(self.state_inflictor) > 0:
         print self.owner.name.capitalize() + ' is no longer poisoned.'#, libtcod.orange)
@@ -85,7 +86,7 @@ class Fighter:
 def player_death(player, attacker):
   if attacker is not None: print 'You were killed by ' + attacker.name.capitalize() + '!'#, libtcod.red)
   else: print 'You died of severe battle wounds.'#, libtcod.red)
-  set_state('dead')
+  function.set_game_state('dead')
   player.char = '%'
   player.color = libtcod.dark_red
 #  for f in glob.glob('lvl*'):

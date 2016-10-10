@@ -29,12 +29,12 @@ ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
 
 # This is used by demographic to populate rooms.
-MAX_ROOM_MONSTERS = 3
+MAX_ROOM_MONSTERS = 7
 
 def render_all(): # Call the functions to draw everything in the screen.
-  function.fov_recompute(player, level_map)
+  function.fov_recompute(function.player(), level_map)
   render.map(level_map)
-  for object in objects:
+  for object in function.objects():
     render.draw(object, level_map)
 
 # Initialize the game screen.
@@ -44,32 +44,31 @@ render.init_map_console(MAP_WIDTH, MAP_HEIGHT) # Create an off-screen console fo
 libtcod.sys_set_fps(LIMIT_FPS)
 
 # Player character initialization.
-fighter_component = component.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30)
-player = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
-objects = [player]
+function.init_player('new')
 
 # Create level and populate it.
 level_map = cartographer.Map(width=MAP_WIDTH, height=MAP_HEIGHT)
 #level_map =cartographer.Map(width=MAP_WIDTH, height=MAP_HEIGHT, map_function=cartographer.make_dungeon, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room_size=ROOM_MAX_SIZE)
-(player.x, player.y) = level_map.rooms[0].center()
-objects.extend(demographic.populate_level(level_map.rooms, MAX_ROOM_MONSTERS))
+(function.player().x, function.player().y) = level_map.rooms[0].center()
+function.objects().extend(demographic.populate_level(level_map.rooms, MAX_ROOM_MONSTERS))
 
-game_state = 'playing'
+function.set_game_state('playing')
 player_action = None
 
 # Main loop.
 while not libtcod.console_is_window_closed():
   render_all()
-  render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, player, level_map.width, level_map.height)
+  render.blit_map(CAMERA_WIDTH, CAMERA_HEIGHT, function.player(), level_map.width, level_map.height)
   libtcod.console_flush()
-  player.fighter.check_state()
-  player_action = get_input.handle_keys(game_state, player, level_map, objects)
-  for object in objects:
+  function.player().fighter.check_state()
+  player_action = get_input.handle_keys(function.get_game_state(), function.player(), level_map, function.objects())
+  for object in function.objects():
     render.clear(object)
   if player_action == 'exit':
     break
-  if game_state == 'playing' and player_action != 'didnt-take-turn':
-    for object in objects:
-      if object.ai:
+  if function.get_game_state() == 'playing' and player_action != 'didnt-take-turn':
+    for object in function.objects():
+      if object.fighter:
         object.fighter.check_state()
-        object.ai.take_turn(level_map, objects)
+      if object.ai:
+        object.ai.take_turn(level_map, function.objects())

@@ -47,8 +47,7 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
       self.move_towards(map, target.x, target.y, object_list)
     libtcod.path_delete(my_path)
   def send_to_back(self):
-    global objects
-    objects.remove(self)
-    objects.insert(0, self)
+    function.objects().remove(self)
+    function.objects().insert(0, self)
   def distance(self, x, y):
     return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)

@@ -24,7 +24,7 @@ def move_or_attack(actor, map, dx, dy, object_list):
   y = actor.y + dy
   target = None
   for object in object_list:
-    if object.x == x and object.y == y:
+    if object.x == x and object.y == y and object.fighter:
       target = object
       break
   if target is not None:

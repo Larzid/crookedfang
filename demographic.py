@@ -10,15 +10,15 @@ def gen_creature(room=None, x=None, y=None):
     y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
   choice = libtcod.random_get_int(0, 0, 100)
   if choice <= 50:
-    fighter_component = component.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20)
-    ai_component = ai.BasicMonster()
-    creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component)
-  elif choice <= 80:
-    fighter_component = component.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, nat_atk_effect=function.inflict_poison)
+    fighter_component = component.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, death_function=component.monster_death, nat_atk_effect=function.inflict_poison)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
+  elif choice <= 80:
+    fighter_component = component.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20, death_function=component.monster_death)
+    ai_component = ai.BasicMonster()
+    creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component)
   else:
-    fighter_component = component.Fighter(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30)
+    fighter_component = component.Fighter(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30, death_function=component.monster_death)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True, fighter=fighter_component, ai=ai_component)
   return creature

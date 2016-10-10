@@ -1,4 +1,29 @@
 import libtcodpy as libtcod
+import component
+import classes
+
+def init_player(action):
+  global player_object, objects_list
+  if action == 'new':
+    fighter_component = component.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, death_function=component.player_death)
+    player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
+    objects_list = [player_object]
+
+def player():
+  obj = player_object
+  return obj
+
+def objects():
+  list = objects_list
+  return list
+
+def set_game_state(new_state):
+  global game_state
+  game_state = new_state
+
+def get_game_state():
+  state = game_state
+  return state
 
 def is_blocked (map, x, y, object_list):
   if map.topography[x][y].blocked:
