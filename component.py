@@ -2,7 +2,7 @@
 import globals
 
 class Fighter:
-  def __init__(self, faction, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
+  def __init__(self, faction, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, check_status=True, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
     self.faction = faction
     self.max_hp = hp
     self.hp = hp
@@ -13,6 +13,7 @@ class Fighter:
     if state == None: state = 'normal'
     self.state = state
     self.state_inflictor = state_inflictor
+    self.check_status = check_status
     if xp_bonus == None: xp_bonus = 0
     self.xp_bonus = xp_bonus
     if xp == None: xp = 0
@@ -82,6 +83,7 @@ class Fighter:
         self.state_inflictor = None
         if self.owner == globals.player(): 
           globals.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
+    self.check_status = False
 
 def player_death(player, attacker):
   if attacker is not None: globals.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)

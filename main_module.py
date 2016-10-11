@@ -31,7 +31,8 @@ render.init_ui()
 while not libtcod.console_is_window_closed():
   render.all(globals.player())
   libtcod.console_flush()
-  globals.player().fighter.check_state()
+  if globals.player().fighter.check_status: 
+    globals.player().fighter.check_state()
   player_action = get_input.handle_keys(globals.player())
   for object in globals.objects():
     render.clear(object)
@@ -39,7 +40,8 @@ while not libtcod.console_is_window_closed():
     break
   if globals.get_game_state() == 'playing' and player_action != 'didnt-take-turn':
     for object in globals.objects():
-      if object.fighter:
+      if object.fighter and object.fighter.check_status:
         object.fighter.check_state()
       if object.ai:
         object.ai.take_turn()
+    globals.player().fighter.check_status = True
