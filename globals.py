@@ -4,6 +4,7 @@ import classes
 import cartographer
 import demographic
 import textwrap
+import ai
 
 # Global player reference.
 def player():
@@ -50,7 +51,8 @@ def init_player(action):
   global player_object
   if action == 'new':
     fighter_component = component.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, death_function=component.player_death)
-    player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
+    ai_component = ai.PlayerControlled()
+    player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component, ai=ai_component)
 
 # Map object initialization
 def init_map(action, width=None, height=None, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):

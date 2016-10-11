@@ -18,7 +18,7 @@ globals.init_map('new')
 #globals.init_map('new', map_function=cartographer.make_dungeon)
 globals.set_game_state('playing')
 globals.init_game_msgs('new')
-player_action = None
+#player_action = None
 globals.message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
 globals.message('Did you at least told somebody what you where up to?', libtcod.crimson)
 globals.message('Well, its kinda late for that.', libtcod.light_purple)
@@ -29,19 +29,10 @@ render.init_ui()
 
 # Main loop.
 while not libtcod.console_is_window_closed():
-  render.all(globals.player())
-  libtcod.console_flush()
-  if globals.player().fighter.check_status: 
-    globals.player().fighter.check_state()
-  player_action = get_input.handle_keys(globals.player())
   for object in globals.objects():
-    render.clear(object)
-  if player_action == 'exit':
+    if object.fighter and object.fighter.check_status:
+      object.fighter.check_state()
+    if object.ai:
+      object.ai.take_turn()
+  if globals.player().ai.action == 'exit':
     break
-  if globals.get_game_state() == 'playing' and player_action != 'didnt-take-turn':
-    for object in globals.objects():
-      if object.fighter and object.fighter.check_status:
-        object.fighter.check_state()
-      if object.ai:
-        object.ai.take_turn()
-    globals.player().fighter.check_status = True
