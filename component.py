@@ -49,10 +49,10 @@ class Fighter:
   def attack(self, target):
     damage = self.power - target.fighter.defense
     if damage > 0:
-#      if target == globals.player():
-#        print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.'#, libtcod.sepia)
-#      else:
-      print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.'#, libtcod.green)
+      if target == globals.player():
+        globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
+      elif self.owner == globals.player():
+        globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.green)
       target.fighter.take_damage(self.owner, damage)
       if target.fighter is not None:
         effect_list = self.secondary_effect
@@ -61,31 +61,31 @@ class Fighter:
             if effect is not None:
               effect(self.owner, target)
     else:
-      print self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no efect!'#, libtcod.red)
+      globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no efect!', libtcod.red)
   def heal(self, amount):
     self.hp += amount
     if self.hp > self.max_hp:
       self.hp = self.max_hp
   def check_state(self):
-    if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
-      self.heal(1)
+#    if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
+#      self.heal(1)
     if self.state == 'poison':
-#      if self.owner == globals.player() or allies.count(self.owner) > 0:
-      print self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.'#, libtcod.red)
-#      if self.state_inflictor == globals.player() or allies.count(self.state_inflictor) > 0:
-#        message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
+      if self.owner == globals.player():
+        globals.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.red)
+      if self.state_inflictor == globals.player():
+        globals.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
       self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
       if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
-#        if self.state_inflictor == globals.player() or allies.count(self.state_inflictor) > 0:
-        print self.owner.name.capitalize() + ' is no longer poisoned.'#, libtcod.orange)
+        if self.state_inflictor == globals.player():
+          globals.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.orange)
         self.state = 'normal'
         self.state_inflictor = None
-#        if self.owner == globals.player() or allies.count(self.owner) > 0: 
-#          message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
+        if self.owner == globals.player(): 
+          globals.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
 
 def player_death(player, attacker):
-  if attacker is not None: print 'You were killed by ' + attacker.name.capitalize() + '!'#, libtcod.red)
-  else: print 'You died of severe battle wounds.'#, libtcod.red)
+  if attacker is not None: globals.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
+  else: globals.message('You died of severe battle wounds.', libtcod.red)
   globals.set_game_state('dead')
   globals.player().char = '%'
   globals.player().color = libtcod.dark_red
@@ -98,8 +98,8 @@ def monster_death(monster, attacker):
 #    obj.equipment.dequip(monster)
 #  for obj in monster.fighter.inventory:
 #    obj.item.drop(monster)
-  if attacker is not None: print monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!'#, libtcod.orange)
-  else: print monster.name.capitalize() + ' died of severe battle wounds.'#, libtcod.orange)
+  if attacker is not None: globals.message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
+  else: globals.message(monster.name.capitalize() + ' died of severe battle wounds.', libtcod.orange)
   monster.char = '%'
   monster.color = libtcod.dark_red
   monster.blocks = False

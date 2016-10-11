@@ -3,6 +3,7 @@ import component
 import classes
 import cartographer
 import demographic
+import textwrap
 
 # Global player reference.
 def player():
@@ -26,6 +27,23 @@ def set_game_state(new_state):
 def get_game_state():
   state = game_state
   return state
+
+def game_msgs():
+  msgs = mesage_list
+  return msgs
+
+def init_game_msgs(action):
+  global mesage_list
+  if action == 'new':
+    mesage_list = []
+
+def msg_width(width):
+  global MSG_WIDTH
+  MSG_WIDTH = width
+
+def msg_height(height):
+  global MSG_HEIGHT
+  MSG_HEIGHT = height
 
 # Player character initialization.
 def init_player(action):
@@ -60,6 +78,7 @@ def init_map(action, width=None, height=None, map_function=None, max_rooms=None,
       else:
         level_map = cartographer.Map(width, height, map_function, max_rooms, min_room_size, max_room_size)
   (player_object.x, player_object.y) = level_map.rooms[0].center()
+  level_map.objects.append(player_object)
   level_map.objects.extend(demographic.populate_level())
 
 def is_blocked (x, y):
@@ -73,11 +92,18 @@ def is_blocked (x, y):
 def fov_recompute(actor):
   libtcod.map_compute_fov(level_map.fov, actor.x, actor.y, actor.fighter.sight, True, 0)
 
+def message(new_msg, color = libtcod.white):
+  new_msg_lines = textwrap.wrap(new_msg, MSG_WIDTH)
+  for line in new_msg_lines:
+    if len(mesage_list) == MSG_HEIGHT:
+      del mesage_list[0]
+    mesage_list.append( (line, color) )
+
 def inflict_poison(attacker, target):
   if libtcod.random_get_int(0, 1, 100) > target.fighter.poison_resist:
     target.fighter.state = 'poison'
     target.fighter.state_inflictor = attacker
-#    if target == player_object: 
-    print target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.'#, libtcod.purple)
-#    if attacker == player_object:
-#      message(attacker.name.capitalize() + ' has poisoned ' + target.name + '.', libtcod.fuchsia)
+    if target == player_object: 
+      message(target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.', libtcod.purple)
+    if attacker == player_object:
+      message(attacker.name.capitalize() + ' has poisoned ' + target.name + '.', libtcod.fuchsia)

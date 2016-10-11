@@ -17,15 +17,19 @@ globals.init_player('new')
 globals.init_map('new')
 #globals.init_map('new', map_function=cartographer.make_dungeon)
 globals.set_game_state('playing')
+globals.init_game_msgs('new')
 player_action = None
+globals.message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
+globals.message('Did you at least told somebody what you where up to?', libtcod.crimson)
+globals.message('Well, its kinda late for that.', libtcod.light_purple)
+
 
 # Start user interface.
 render.init_ui()
 
 # Main loop.
 while not libtcod.console_is_window_closed():
-  render.all()
-  render.blit_map(globals.player())
+  render.all(globals.player())
   libtcod.console_flush()
   globals.player().fighter.check_state()
   player_action = get_input.handle_keys(globals.player())
