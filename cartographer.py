@@ -1,5 +1,13 @@
 ﻿import libtcodpy as libtcod
-import globals
+
+# Default map size. 
+MAP_WIDTH = 65
+MAP_HEIGHT = 53
+
+# Default parameters for dungeon generator (posibly other map generators).
+ROOM_MAX_SIZE = 10
+ROOM_MIN_SIZE = 6
+MAX_ROOMS = 30
 
 class Tile:
   def __init__(self, blocked, block_sight = None, tile_face=None, back_light=None, back_dark=None, fore_light=None, fore_dark=None):
@@ -27,10 +35,11 @@ class Rect:
     return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
 
 class Map:
-  def __init__(self, width=65, height=53, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
+  def __init__(self, width=MAP_WIDTH, height=MAP_HEIGHT, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
     self.width = width
     self.height = height
     self.topography = []
+    self.objects = []
     if map_function is None:
       self.rooms = make_arena(self)
     elif max_rooms is None:
@@ -82,7 +91,8 @@ def make_arena(map):
   map.dungeon_wall(map.width/2 + 10, map.height/2 + 10)
   room = [Rect(0, 0, map.width - 1, map.height - 1)]
   return room
-def make_dungeon(map, max_rooms, min_room_size, max_room_size):
+
+def make_dungeon(map, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room_size=ROOM_MAX_SIZE):
   map.topography = [[ Tile(blocked=True, block_sight=True, tile_face=chr(173), back_light=libtcod.black, back_dark=libtcod.black, fore_light=libtcod.white, fore_dark=libtcod.dark_gray) for y in range(map.height) ] for x in range(map.width) ]
   rooms = []
   num_rooms = 0

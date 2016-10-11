@@ -1,6 +1,25 @@
 import libtcodpy as libtcod
 import globals
 
+# Screen size in tiles.
+SCREEN_WIDTH = 80
+SCREEN_HEIGHT = 60
+LIMIT_FPS = 20
+
+# Size of the map display area (map can scroll).
+CAMERA_WIDTH = 65
+CAMERA_HEIGHT = 53
+
+def init_screen():
+  libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
+  libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Crooked Fang', False) 
+  libtcod.sys_set_fps(LIMIT_FPS)
+
+def init_ui():
+  global con, con_width, con_height
+  (con_width, con_height) = (globals.map().width, globals.map().height)
+  con = libtcod.console_new(con_width, con_height)
+
 def all(): # Call the functions to draw everything in the screen.
   globals.fov_recompute(globals.player())
   lvl()
@@ -8,11 +27,6 @@ def all(): # Call the functions to draw everything in the screen.
     if object != globals.player():
       draw(object)
   draw(globals.player())
-
-def init_map_console():
-  global con, con_width, con_height
-  (con_width, con_height) = (globals.map().width, globals.map().height)
-  con = libtcod.console_new(con_width, con_height)
 
 def draw(object):
 #  if libtcod.map_is_in_fov(globals.map().fov, object.x, object.y):
@@ -34,11 +48,11 @@ def lvl():
         libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_light, globals.map().topography[x][y].back_light)
         globals.map().topography[x][y].explored = True
 
-def blit_map(width, height, center):
-  x = center.x - (width/2)
+def blit_map(center):
+  x = center.x - (CAMERA_WIDTH/2)
   if x <= 0: x = 0
-  if x + width >= globals.map().width: x = globals.map().width - width
-  y = center.y - (height/2)
+  if x + CAMERA_WIDTH >= globals.map().width: x = globals.map().width - CAMERA_WIDTH
+  y = center.y - (CAMERA_HEIGHT/2)
   if y <= 0: y = 0
-  if y + height >= globals.map().height: y = globals.map().height - height 
-  libtcod.console_blit(con, x, y, width, height, 0, 0, 0)
+  if y + CAMERA_HEIGHT >= globals.map().height: y = globals.map().height - CAMERA_HEIGHT 
+  libtcod.console_blit(con, x, y, CAMERA_WIDTH, CAMERA_HEIGHT, 0, 0, 0)

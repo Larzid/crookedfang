@@ -4,6 +4,9 @@ import component
 import ai
 import globals
 
+# This is used by demographic to populate rooms.
+MAX_ROOM_MONSTERS = 7
+
 def gen_creature(room=None, x=None, y=None):
   if room is not None and x is None:
     x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
@@ -30,7 +33,7 @@ def populate_room(room, num_monsters):
     creature_list.append(creature)
   return creature_list
 
-def populate_level(max_room_monsters):
+def populate_level(max_room_monsters=MAX_ROOM_MONSTERS):
   final_list = []
   for room in globals.map().rooms:
     num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
