@@ -12,8 +12,10 @@ CAMERA_HEIGHT = 53
 
 BAR_WIDTH = 13
 
-globals.msg_width(SCREEN_WIDTH - 2)
-globals.msg_height(SCREEN_HEIGHT - CAMERA_HEIGHT - 1)
+# When importing globals: value (value) to globals.
+export = globals.Export()
+export.msg_width(SCREEN_WIDTH - 2)
+export.msg_height(SCREEN_HEIGHT - CAMERA_HEIGHT - 1)
 
 def init_screen():
   libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)

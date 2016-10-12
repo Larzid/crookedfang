@@ -6,7 +6,7 @@ import libtcodpy as libtcod # "The Doryen Library" v1.5.1 Source: https://bitbuc
 import cartographer # This handles the map object (tecniaclly a class but it deserves special treatment).
 # demographic.py - Functions to generate creatures and items and populate areas.
 import render # All related to displaying stuff on the screen.
-import get_input # Self explainatory.
+# get_input - Self explainatory.
 import globals # Here live the global functions and objects (player, map, object list, etc.).
 
 # Start the game screen.
@@ -31,7 +31,7 @@ render.init_ui()
 while not libtcod.console_is_window_closed():
   for object in globals.objects():
     if object.fighter and object.fighter.check_status:
-      object.fighter.check_state()
+      object.fighter.status_check()
     if object.ai:
       object.ai.take_turn()
   if globals.player().ai.action == 'exit':

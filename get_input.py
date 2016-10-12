@@ -8,7 +8,7 @@ def handle_keys(actor):
     libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
   elif key.vk == libtcod.KEY_ESCAPE:
     return 'exit'
-  if globals.get_game_state() == 'playing':
+  if actor.ai.state == 'playing':
     if libtcod.console_is_key_pressed(libtcod.KEY_UP):
       move_or_attack(actor, 0, -1)
     elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):

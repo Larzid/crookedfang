@@ -6,6 +6,17 @@ import demographic
 import textwrap
 import ai
 
+# The Export class receives values from modules that import it and sets them as module-wise globals.
+# Basically allows to get data from a module without havin to import it.
+class Export:
+  def msg_width(self, width):
+    global MSG_WIDTH
+    MSG_WIDTH = width
+
+  def msg_height(self, height):
+    global MSG_HEIGHT
+    MSG_HEIGHT = height
+
 # Global player reference.
 def player():
   obj = player_object
@@ -37,14 +48,6 @@ def init_game_msgs(action):
   global mesage_list
   if action == 'new':
     mesage_list = []
-
-def msg_width(width):
-  global MSG_WIDTH
-  MSG_WIDTH = width
-
-def msg_height(height):
-  global MSG_HEIGHT
-  MSG_HEIGHT = height
 
 # Player character initialization.
 def init_player(action):
@@ -103,8 +106,8 @@ def message(new_msg, color = libtcod.white):
 
 def inflict_poison(attacker, target):
   if libtcod.random_get_int(0, 1, 100) > target.fighter.poison_resist:
-    target.fighter.state = 'poison'
-    target.fighter.state_inflictor = attacker
+    target.fighter.status = 'poison'
+    target.fighter.status_inflictor = attacker
     if target == player_object: 
       message(target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.', libtcod.purple)
     if attacker == player_object:
