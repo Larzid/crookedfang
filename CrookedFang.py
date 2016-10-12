@@ -1337,9 +1337,12 @@ def handle_keys(actor):
       if key_char == '?':
         help()
       elif key_char == 'l':
-        cursor.x = actor.x
-        cursor.y = actor.y
+        start_cursor(actor.x, actor.y)
+        fov_recompute = True
+        libtcod.console_flush()
+        render_all(actor)
         game_state = 'looking'
+        return 'didnt-take-turn'
       elif key_char == 'g':
         for object in objects:
           if object.x == actor.x and object.y == actor.y and object.item:
@@ -1411,7 +1414,7 @@ def handle_keys(actor):
       key_char = chr(key.c)
       if key_char == 'l':
         game_state = 'playing'
-      return 'didnt-take-turn'
+    return 'didnt-take-turn'
 
 def look_names():
   global cursor
@@ -1504,9 +1507,8 @@ def closest_monster(actor, max_range):
 
 def start_cursor(x, y):
   (cursor.x, cursor.y) = (x, y)
-  libtcod.console_set_char_background(con, cursor.x, cursor.y, libtcod.darker_gray)
-  if libtcod.console_get_char_foreground(con, cursor.x, cursor.y) == libtcod.white:
-    libtcod.console_set_char_foreground(con, cursor.x, cursor.y, libtcod.black)
+  libtcod.console_set_char_background(con, cursor.x, cursor.y, libtcod.black)
+  libtcod.console_set_char_foreground(con, cursor.x, cursor.y, libtcod.white)
 
 def cursor_move(dx, dy):
   if libtcod.map_is_in_fov(fov_map, cursor.x + dx, cursor.y + dy):
@@ -1514,9 +1516,8 @@ def cursor_move(dx, dy):
     start_cursor(cursor.x + dx, cursor.y + dy)
 
 def clear_cursor():
-  libtcod.console_set_char_background(con, cursor.x, cursor.y, libtcod.black)
-  if libtcod.console_get_char_foreground(con, cursor.x, cursor.y) == libtcod.black:
-    libtcod.console_set_char_foreground(con, cursor.x, cursor.y, libtcod.white)
+  libtcod.console_set_char_background(con, cursor.x, cursor.y, map[cursor.x][cursor.y].back_light)
+  libtcod.console_set_char_foreground(con, cursor.x, cursor.y, map[cursor.x][cursor.y].fore_light)
 
 ##################
 #STATUS FUNCTIONS#
