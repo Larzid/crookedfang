@@ -32,14 +32,6 @@ def objects():
   list = level_map.objects
   return list
 
-def set_game_state(new_state):
-  global game_state
-  game_state = new_state
-
-def get_game_state():
-  state = game_state
-  return state
-
 def game_msgs():
   msgs = mesage_list
   return msgs

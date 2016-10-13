@@ -1,5 +1,6 @@
 import libtcodpy as libtcod
 import globals
+import classes
 
 # Screen size in tiles.
 SCREEN_WIDTH = 80
@@ -23,11 +24,12 @@ def init_screen():
   libtcod.sys_set_fps(LIMIT_FPS)
 
 def init_ui():
-  global con, con_width, con_height, side_panel, msg_panel
+  global con, con_width, con_height, side_panel, msg_panel, cursor
   (con_width, con_height) = (globals.map().width, globals.map().height)
   con = libtcod.console_new(con_width, con_height)
   side_panel = libtcod.console_new(SCREEN_WIDTH - CAMERA_WIDTH, CAMERA_HEIGHT)
   msg_panel = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT - CAMERA_HEIGHT)
+  cursor = classes.Object(0, 0, '', 'cursor', libtcod.white)
 
 def all(actor): # Call the functions to draw everything in the screen.
   globals.fov_recompute(actor)
@@ -52,6 +54,23 @@ def map():
         libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_light, globals.map().topography[x][y].back_light)
         globals.map().topography[x][y].explored = True
 
+def draw(object):
+#  if libtcod.map_is_in_fov(globals.map().fov, object.x, object.y):
+    libtcod.console_set_default_foreground(con, object.color)
+    libtcod.console_put_char(con, object.x, object.y, object.char, libtcod.BKGND_NONE)
+
+def clear(object):
+  libtcod.console_put_char(con, object.x, object.y, ' ', libtcod.BKGND_NONE)
+
+def blit_map(center):
+  x = center.x - (CAMERA_WIDTH/2)
+  if x <= 0: x = 0
+  if x + CAMERA_WIDTH >= globals.map().width: x = globals.map().width - CAMERA_WIDTH
+  y = center.y - (CAMERA_HEIGHT/2)
+  if y <= 0: y = 0
+  if y + CAMERA_HEIGHT >= globals.map().height: y = globals.map().height - CAMERA_HEIGHT 
+  libtcod.console_blit(con, x, y, CAMERA_WIDTH, CAMERA_HEIGHT, 0, 0, 0)
+
 def side_bar(actor):
   libtcod.console_set_default_background(side_panel, libtcod.black)
   libtcod.console_clear(side_panel)
@@ -64,45 +83,6 @@ def side_bar(actor):
 #  libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(dungeon_level))
   libtcod.console_blit(side_panel, 0, 0, SCREEN_WIDTH - CAMERA_WIDTH, CAMERA_HEIGHT, 0, CAMERA_WIDTH, 0) 
 
-def msg_bar(actor):
-  libtcod.console_set_default_background(msg_panel, libtcod.black)
-  libtcod.console_clear(msg_panel)
-  y = 1
-  for (line, color) in globals.game_msgs():
-    libtcod.console_set_default_foreground(msg_panel, color)
-    libtcod.console_print_ex(msg_panel, 1, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
-    y += 1
-  if globals.get_game_state() == 'playing':
-    standing = [obj.name for obj in globals.objects() if obj.x == actor.x and obj.y == actor.y and obj.name != actor.name]
-    if not len(standing) == 0:
-      standing = ', '.join(standing)
-      libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
-      libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Standing on: ' + standing)
-#  if game_state == 'looking':
-#    libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
-#    libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Looking at: ' + look_names())
-#  if game_state == 'target':
-#    libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
-#    libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Target: ' + look_names())
-  libtcod.console_blit(msg_panel, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT - CAMERA_HEIGHT, 0, 0, CAMERA_HEIGHT)
-
-def blit_map(center):
-  x = center.x - (CAMERA_WIDTH/2)
-  if x <= 0: x = 0
-  if x + CAMERA_WIDTH >= globals.map().width: x = globals.map().width - CAMERA_WIDTH
-  y = center.y - (CAMERA_HEIGHT/2)
-  if y <= 0: y = 0
-  if y + CAMERA_HEIGHT >= globals.map().height: y = globals.map().height - CAMERA_HEIGHT 
-  libtcod.console_blit(con, x, y, CAMERA_WIDTH, CAMERA_HEIGHT, 0, 0, 0)
-
-def draw(object):
-#  if libtcod.map_is_in_fov(globals.map().fov, object.x, object.y):
-    libtcod.console_set_default_foreground(con, object.color)
-    libtcod.console_put_char(con, object.x, object.y, object.char, libtcod.BKGND_NONE)
-
-def clear(object):
-  libtcod.console_put_char(con, object.x, object.y, ' ', libtcod.BKGND_NONE)
-
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
   bar_width = int(float(value) / maximum * total_width)
   libtcod.console_set_default_background(side_panel, back_color)
@@ -111,5 +91,56 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
   if bar_width > 0:
     libtcod.console_rect(side_panel, x, y, bar_width, 1, False, libtcod.BKGND_SCREEN)
   libtcod.console_set_default_foreground(side_panel, libtcod.white)
-  libtcod.console_print_ex(side_panel, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER,
-    name + ': ' + str(value) + '/' + str(maximum))
+  libtcod.console_print_ex(side_panel, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER, name + ': ' + str(value) + '/' + str(maximum))
+
+def msg_bar(actor):
+  libtcod.console_set_default_background(msg_panel, libtcod.black)
+  libtcod.console_clear(msg_panel)
+  y = 1
+  for (line, color) in globals.game_msgs():
+    libtcod.console_set_default_foreground(msg_panel, color)
+    libtcod.console_print_ex(msg_panel, 1, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
+    y += 1
+  if actor.ai.state == 'playing':
+    standing = [obj.name for obj in globals.objects() if obj.x == actor.x and obj.y == actor.y and obj.name != actor.name]
+    if not len(standing) == 0:
+      standing = ', '.join(standing)
+      libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
+      libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Standing on: ' + standing)
+  if actor.ai.state == 'looking':
+    libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
+    libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Looking at: ' + look_names())
+#  if actor.ai.state == 'target':
+#    libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
+#    libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Target: ' + look_names())
+  libtcod.console_blit(msg_panel, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT - CAMERA_HEIGHT, 0, 0, CAMERA_HEIGHT)
+
+def look_names():
+#  global cursor
+  (x, y) = (cursor.x, cursor.y)
+  names = []
+  for obj in globals.objects():
+    if obj.x == x and obj.y == y and libtcod.map_is_in_fov(globals.map().fov, obj.x, obj.y):
+      names.append(obj.name)
+  if len(names) != 0:
+    names = ', '.join(names)
+  else:
+    names = 'Nothing'
+  return names.capitalize()
+
+def start_cursor(x, y):
+  global old_fore, old_back
+  (cursor.x, cursor.y) = (x, y)
+  old_back = globals.map().topography[cursor.x][cursor.y].back_light
+  old_fore = globals.map().topography[cursor.x][cursor.y].fore_light
+  globals.map().topography[cursor.x][cursor.y].back_light = libtcod.black
+  globals.map().topography[cursor.x][cursor.y].fore_light = libtcod.white
+
+def cursor_move(dx, dy):
+  if libtcod.map_is_in_fov(globals.map().fov, cursor.x + dx, cursor.y + dy):
+    clear_cursor()
+    start_cursor(cursor.x + dx, cursor.y + dy)
+
+def clear_cursor():
+  globals.map().topography[cursor.x][cursor.y].back_light = old_back
+  globals.map().topography[cursor.x][cursor.y].fore_light = old_fore
