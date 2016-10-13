@@ -33,7 +33,7 @@ while not libtcod.console_is_window_closed():
   for object in globals.objects():
     if object.fighter and object.fighter.check_status:
       object.fighter.status_check()
-    if object.ai:
+    if object.fighter and object.ai:
       object.ai.take_turn()
   if globals.player().ai.action == 'exit':
     break

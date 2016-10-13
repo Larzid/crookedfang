@@ -5,7 +5,7 @@ import ai
 import globals
 
 # This is used by demographic to populate rooms.
-MAX_ROOM_MONSTERS = 7
+MAX_ROOM_MONSTERS = 10
 
 def gen_creature(room=None, x=None, y=None):
   if room is not None and x is None:
@@ -13,15 +13,15 @@ def gen_creature(room=None, x=None, y=None):
     y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
   choice = libtcod.random_get_int(0, 0, 100)
   if choice <= 50:
-    fighter_component = combat.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, death_function=combat.monster_death, nat_atk_effect=globals.inflict_poison)
+    fighter_component = combat.Fighter(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=combat.monster_death, nat_atk_effect=globals.inflict_poison)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
   elif choice <= 80:
-    fighter_component = combat.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20, death_function=combat.monster_death)
+    fighter_component = combat.Fighter(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20, xp_bonus=35, lvl_base=40, lvl_factor=20, death_function=combat.monster_death)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, fighter=fighter_component, ai=ai_component)
   else:
-    fighter_component = combat.Fighter(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30, death_function=combat.monster_death)
+    fighter_component = combat.Fighter(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30, xp_bonus=100, lvl_base=200, lvl_factor=150, death_function=combat.monster_death)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True, fighter=fighter_component, ai=ai_component)
   return creature

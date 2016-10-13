@@ -75,9 +75,9 @@ def side_bar(actor):
   libtcod.console_set_default_background(side_panel, libtcod.black)
   libtcod.console_clear(side_panel)
   if actor == globals.player(): libtcod.console_print_frame(side_panel,0, 2, 15, 10, clear=True)
-  libtcod.console_print_ex(side_panel, 1 , 3, libtcod.BKGND_NONE, libtcod.LEFT, globals.player().name.capitalize() )# + ' lvl: ' + str(globals.player().fighter.level))
+  libtcod.console_print_ex(side_panel, 1 , 3, libtcod.BKGND_NONE, libtcod.LEFT, globals.player().name.capitalize() + ' lvl: ' + str(globals.player().fighter.level))
   render_bar(1, 5, BAR_WIDTH, 'HP', globals.player().fighter.hp, globals.player().fighter.max_hp, libtcod.light_red, libtcod.darker_red)
-#  render_bar(1, 7, BAR_WIDTH, 'XP', globals.player().fighter.xp, LEVEL_UP_BASE + globals.player().fighter.level * LEVEL_UP_FACTOR, libtcod.light_purple, libtcod.darker_purple)
+  render_bar(1, 7, BAR_WIDTH, 'XP', globals.player().fighter.xp, globals.player().fighter.lvl_base + globals.player().fighter.level * globals.player().fighter.lvl_factor, libtcod.light_purple, libtcod.darker_purple)
   libtcod.console_print_ex(side_panel, 1 , 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Def: ' + str(globals.player().fighter.defense) )# + ' + ' + str(sum(equip.equipment.defense_bonus for equip in globals.player().fighter.equipment.values() if equip is not None)))
   libtcod.console_print_ex(side_panel, 1 , 10, libtcod.BKGND_NONE, libtcod.LEFT, 'Pow: ' + str(globals.player().fighter.power) )# + ' + ' + str(sum(equip.equipment.power_bonus for equip in globals.player().fighter.equipment.values() if equip is not None)))
 #  libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(dungeon_level))
@@ -121,7 +121,10 @@ def look_names():
   names = []
   for obj in globals.objects():
     if obj.x == x and obj.y == y and libtcod.map_is_in_fov(globals.map().fov, obj.x, obj.y):
-      names.append(obj.name)
+      if obj.fighter:
+        names.append(obj.name + '(lv' + str(obj.fighter.level) +')')
+      else:
+        names.append(obj.name)
   if len(names) != 0:
     names = ', '.join(names)
   else:

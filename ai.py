@@ -32,6 +32,12 @@ class BasicMonster:
           if not globals.is_blocked(monster.x + x, monster.y + y):
             self.action = 'moved'
             monster.move(x, y)
+      self.owner.fighter.check_status = True
+  def level_up(self):
+    if self.owner.fighter.level % 3 == 0: self.owner.fighter.max_hp += 20
+    self.owner.fighter.hp = self.owner.fighter.max_hp
+    if self.owner.fighter.level % 2 == 0: self.owner.fighter.power += 1
+    if self.owner.fighter.level % 2 == 1: self.owner.fighter.defense += 1
 
 class PlayerControlled:
   def __init__(self):
@@ -47,3 +53,21 @@ class PlayerControlled:
         render.clear(object)
       if self.owner.fighter:
         self.owner.fighter.check_status = True
+  def level_up(self):
+    if self.owner.fighter.level % 3 == 0: self.owner.fighter.max_hp += 20
+    self.owner.fighter.hp = self.owner.fighter.max_hp
+    if self.owner.fighter.level % 2 == 0: self.owner.fighter.power += 1
+    if self.owner.fighter.level % 2 == 1: self.owner.fighter.defense += 1
+#    choice = None
+#    while choice == None:
+#      choice = menu('Level up! Choose a stat to raise:\n',
+#        [('Constitution (+20 HP, from ' + str(who.fighter.max_hp) + ')', libtcod.red),
+#        ('Strength (+1 attack, from ' + str(who.fighter.power) + ')', libtcod.green),
+#        ('Agility (+1 defense, from ' + str(who.fighter.defense) + ')', libtcod.blue)], 40)
+#    if choice == 0:
+#      who.fighter.base_max_hp += 20
+#      who.fighter.hp += 20
+#    elif choice == 1:
+#      who.fighter.base_power += 1
+#    elif choice == 2:
+#      who.fighter.base_defense += 1

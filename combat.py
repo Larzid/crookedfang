@@ -2,7 +2,7 @@
 import globals
 
 class Fighter:
-  def __init__(self, faction, hp, defense, power, sight, poison_resist, status=None, status_inflictor=None, check_status=True, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
+  def __init__(self, faction, hp, defense, power, sight, poison_resist, status=None, status_inflictor=None, check_status=True, xp_bonus=None, lvl_base=None, lvl_factor=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
     self.faction = faction
     self.max_hp = hp
     self.hp = hp
@@ -16,8 +16,11 @@ class Fighter:
     self.check_status = check_status
     if xp_bonus == None: xp_bonus = 0
     self.xp_bonus = xp_bonus
-    if xp == None: xp = 0
-    self.xp = xp
+    self.xp = 0
+    if lvl_base == None: lvl_base = 0
+    self.lvl_base = lvl_base
+    if lvl_factor == None: lvl_factor = 0
+    self.lvl_factor = lvl_factor
     if level == None: level = 1
     self.level = level
     self.inventory = []
@@ -46,14 +49,14 @@ class Fighter:
         function = self.death_function
         if function is not None:
           function(self.owner, attacker)
-#        if attacker is not None: attacker.fighter.xp += self.xp_bonus
+        if attacker is not None: attacker.fighter.xp += self.xp_bonus
   def attack(self, target):
     damage = self.power - target.fighter.defense
     if damage > 0:
       if target == globals.player():
-        globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
+        globals.message(self.owner.name.capitalize() + '(lv' + str(self.level) + ')' + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
       elif self.owner == globals.player():
-        globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.green)
+        globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + '(lv' + str(target.fighter.level) + ')' + ' for ' + str(damage) + ' hit points.', libtcod.green)
       target.fighter.take_damage(self.owner, damage)
       if target.fighter is not None:
         effect_list = self.secondary_effect
@@ -68,6 +71,7 @@ class Fighter:
     if self.hp > self.max_hp:
       self.hp = self.max_hp
   def status_check(self):
+    check_level_up(self)
     if self.status == 'normal' and self.last_hurt is not None and globals.turn() - self.last_hurt != 0 and (globals.turn() - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.status == 'poison':
@@ -84,6 +88,15 @@ class Fighter:
         if self.owner == globals.player(): 
           globals.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
     self.check_status = False
+
+def check_level_up(who):
+  level_up_xp = who.lvl_base + who.level * who.lvl_factor
+  if who.xp >= level_up_xp and level_up_xp != 0:
+    who.level += 1
+    who.xp -= level_up_xp
+    if who.owner == globals.player():
+      globals.message('Your battle skills grow stronger! You reached level ' + str(who.level) + '!', libtcod.yellow)
+    who.owner.ai.level_up()
 
 def player_death(player, attacker):
   if attacker is not None: globals.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
