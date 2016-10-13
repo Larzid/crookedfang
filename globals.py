@@ -49,6 +49,20 @@ def init_game_msgs(action):
   if action == 'new':
     mesage_list = []
 
+def init_turn_counter(action):
+  global turn_counter
+  if action == 'new':
+    turn_counter = 0
+
+def turn():
+  global turn_counter
+  counter = turn_counter
+  return counter
+
+def next_turn():
+  global turn_counter
+  turn_counter += 1
+
 # Player character initialization.
 def init_player(action):
   global player_object

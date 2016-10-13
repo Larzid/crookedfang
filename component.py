@@ -24,7 +24,7 @@ class Fighter:
     if inv_max == None: inv_max = 1
     self.inv_max = inv_max
     self.equipment = {'good hand':None, 'off hand':None, 'head':None, 'torso':None, 'feet':None}
-    self.death_globals = death_function
+    self.death_function = death_function
     self.last_hurt = last_hurt
     self.nat_atk_effect = nat_atk_effect
   @property
@@ -41,11 +41,11 @@ class Fighter:
   def take_damage(self, attacker, damage):
     if damage > 0:
       self.hp -= damage
-#      self.last_hurt = turn
+      self.last_hurt = globals.turn()
       if self.hp <= 0:
-        globals = self.death_globals
-        if globals is not None:
-          globals(self.owner, attacker)
+        function = self.death_function
+        if function is not None:
+          function(self.owner, attacker)
 #        if attacker is not None: attacker.fighter.xp += self.xp_bonus
   def attack(self, target):
     damage = self.power - target.fighter.defense
@@ -68,8 +68,8 @@ class Fighter:
     if self.hp > self.max_hp:
       self.hp = self.max_hp
   def status_check(self):
-#    if self.status == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
-#      self.heal(1)
+    if self.status == 'normal' and self.last_hurt is not None and globals.turn() - self.last_hurt != 0 and (globals.turn() - self.last_hurt) % 10 == 0:
+      self.heal(1)
     if self.status == 'poison':
       if self.owner == globals.player():
         globals.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.red)
