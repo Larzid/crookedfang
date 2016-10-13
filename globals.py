@@ -1,5 +1,5 @@
 ﻿import libtcodpy as libtcod
-import component
+import combat
 import classes
 import cartographer
 import demographic
@@ -67,7 +67,7 @@ def next_turn():
 def init_player(action):
   global player_object
   if action == 'new':
-    fighter_component = component.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, death_function=component.player_death)
+    fighter_component = combat.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, death_function=combat.player_death)
     ai_component = ai.PlayerControlled()
     player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component, ai=ai_component)
 
