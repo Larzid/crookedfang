@@ -2,6 +2,8 @@
 import render
 import globals
 
+INVENTORY_WIDTH = 50
+
 def block_for_key():
   while True:
     key = libtcod.console_check_for_keypress(True)
@@ -42,6 +44,17 @@ def handle_keys(actor):
       if key_char == 'l':
         action = look(actor)
         return action
+      elif key_char == 'g':
+        for object in globals.objects():
+          if object.x == actor.x and object.y == actor.y and object.item:
+            object.item.pick_up(actor)
+            break
+        return 'didnt-take-turn'
+      elif key_char == 'i':
+        chosen_item = inventory_menu(actor, 'Press the key next to an item to use it, or any other to cancel.\n')
+        if chosen_item is not None:
+          chosen_item.use(actor)
+        else: return 'didnt-take-turn'
       return 'didnt-take-turn'
 
 def look(actor):
@@ -94,3 +107,12 @@ def move_or_attack(actor, dx, dy):
   else:
     actor.move(dx, dy)
     globals.fov_recompute(actor)
+
+def inventory_menu(actor, header):
+  if len(actor.fighter.inventory) == 0:
+    options = [('Inventory is empty.', libtcod.white)]
+  else:
+    options = [(' ' + str(item.item.qty) + ' ' + item.char + ' ' + item.name, item.color) for item in actor.fighter.inventory]
+  index = render.menu(header, options, INVENTORY_WIDTH)
+  if index is None or len(actor.fighter.inventory) == 0: return None
+  return actor.fighter.inventory[index].item

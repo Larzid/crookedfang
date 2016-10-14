@@ -91,6 +91,11 @@ def init_map(action, width=None, height=None, map_function=None, max_rooms=None,
   (player_object.x, player_object.y) = level_map.rooms[0].center()
   level_map.objects.append(player_object)
   level_map.objects.extend(generator.populate_level())
+  level_map.objects.extend(generator.level_items())
+  for object in level_map.objects:
+    if object.item:
+      object.send_to_back() 
+
 
 def is_blocked (x, y):
   if level_map.topography[x][y].blocked:

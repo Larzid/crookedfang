@@ -3,7 +3,7 @@ import globals
 import math
 
 class Object: # Player, NPCs, Items... almost anything on the map is an object.
-  def __init__(self, x, y, char, name, color, blocks=False, fighter=None, ai=None):
+  def __init__(self, x, y, char, name, color, blocks=False, fighter=None, ai=None, item=None, spell=None):
     self.x = x
     self.y = y
     self.char = char
@@ -16,6 +16,12 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
     self.ai = ai
     if self.ai:
       self.ai.owner = self
+    self.item = item
+    if self.item:
+      self.item.owner = self
+    self.spell = spell
+    if self.spell:
+      self.spell.owner = self
   def move(self, dx, dy):
     if not globals.is_blocked(self.x + dx, self.y + dy):
       self.x += dx

@@ -194,25 +194,21 @@ class Rect:
 ###################
 
 class Fighter:
-  def __init__(self, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=None, xp=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
+  def __init__(self, hp, defense, power, sight, poison_resist, state=None, state_inflictor=None, xp_bonus=0, xp=0, level=1, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
     self.base_max_hp = hp
     self.hp = hp
     self.base_defense = defense
     self.base_power = power
     self.base_sight = sight
     self.poison_resist = poison_resist
-    if state == None: state = 'normal'
     self.state = state
     self.state_inflictor = state_inflictor
-    if xp_bonus == None: xp_bonus = 0
     self.xp_bonus = xp_bonus
-    if xp == None: xp = 0
     self.xp = xp
-    if level == None: level = 1
     self.level = level
-    self.inventory = []
-    if inv_max == None: inv_max = 1
-    self.inv_max = inv_max
+    if inv_max != None
+      self.inventory = []
+      self.inv_max = inv_max
     self.equipment = {'good hand':None, 'off hand':None, 'head':None, 'torso':None, 'feet':None}
     self.death_function = death_function
     self.last_hurt = last_hurt
@@ -274,7 +270,7 @@ class Fighter:
     if self.hp > self.max_hp:
       self.hp = self.max_hp
   def check_state(self):
-    if self.state == 'normal' and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
+    if self.state is None and self.last_hurt is not None and turn - self.last_hurt != 0 and (turn - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.state == 'poison':
       self.take_damage(self.state_inflictor, max(int(self.max_hp / 100), 1))
@@ -287,11 +283,10 @@ class Fighter:
         if self.owner == player or allies.count(self.owner) > 0: message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
 
 class Item:
-  def __init__(self, qty, ammo=None, projectile_bonus=None, stackable=None , use_function=None):
+  def __init__(self, qty, ammo=None, projectile_bonus=None, stackable=True , use_function=None):
     self.qty = qty
     self.ammo = ammo
     self.projectile_bonus = projectile_bonus
-    if stackable == None: stackable = True
     self.stackable = stackable
     self.use_function = use_function
   def pick_up(self, owner):
