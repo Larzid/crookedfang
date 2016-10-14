@@ -55,7 +55,13 @@ def handle_keys(actor):
         if chosen_item is not None:
           chosen_item.use(actor)
         else: return 'didnt-take-turn'
-      return 'didnt-take-turn'
+      elif key_char == 'd':
+        chosen_item = inventory_menu(actor, 'Press the key next to an item to drop it, or any other to cancel.\n')
+        if chosen_item is not None:
+          chosen_item.drop(actor)
+        else: return 'didnt-take-turn'
+      else:
+        return 'didnt-take-turn'
 
 def look(actor):
   actor.ai.state = 'looking'
@@ -91,6 +97,41 @@ def look(actor):
         render.clear_cursor()
         actor.ai.state = 'playing'
         return 'didnt-take-turn'
+    render.all(actor)
+    libtcod.console_flush()
+
+def target_area(actor):
+  actor.ai.state = 'target'
+  render.start_cursor(actor.x, actor.y)
+  render.all(actor)
+  libtcod.console_flush()
+  while actor.ai.state == 'target':
+    key = block_for_key()
+    if key.vk == libtcod.KEY_UP or key.vk == libtcod.KEY_KP8:
+      render.cursor_move(0, -1)
+    elif key.vk == libtcod.KEY_DOWN or key.vk == libtcod.KEY_KP2:
+      render.cursor_move(0, 1)
+    elif key.vk == libtcod.KEY_LEFT or key.vk == libtcod.KEY_KP4:
+      render.cursor_move(-1, 0)
+    elif key.vk == libtcod.KEY_RIGHT or key.vk == libtcod.KEY_KP6:
+      render.cursor_move(1, 0)
+    elif key.vk == libtcod.KEY_HOME or key.vk == libtcod.KEY_KP7:
+      render.cursor_move(-1, -1)
+    elif key.vk == libtcod.KEY_PAGEUP or key.vk == libtcod.KEY_KP9:
+      render.cursor_move(1, -1)
+    elif key.vk == libtcod.KEY_END or key.vk == libtcod.KEY_KP1:
+      render.cursor_move(-1, 1)
+    elif key.vk == libtcod.KEY_PAGEDOWN or key.vk == libtcod.KEY_KP3:
+      render.cursor_move(1, 1)
+    elif key.vk == libtcod.KEY_ENTER or key.vk == libtcod.KEY_KPENTER:
+      tile = render.get_cursor()
+      render.clear_cursor()
+      actor.ai.state = 'playing'
+      return tile
+    elif key.vk == libtcod.KEY_BACKSPACE:
+      render.clear_cursor()
+      actor.ai.state = 'playing'
+      return (None, None)
     render.all(actor)
     libtcod.console_flush()
 

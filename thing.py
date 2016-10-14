@@ -1,4 +1,5 @@
 ﻿import libtcodpy as libtcod
+import render
 import globals
 
 class Item:

@@ -117,7 +117,6 @@ def msg_bar(actor):
   libtcod.console_blit(msg_panel, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT - CAMERA_HEIGHT, 0, 0, CAMERA_HEIGHT)
 
 def look_names():
-#  global cursor
   (x, y) = (cursor.x, cursor.y)
   names = []
   for obj in globals.objects():
@@ -148,6 +147,10 @@ def cursor_move(dx, dy):
 def clear_cursor():
   globals.map().topography[cursor.x][cursor.y].back_light = old_back
   globals.map().topography[cursor.x][cursor.y].fore_light = old_fore
+
+def get_cursor():
+  tuple = (cursor.x, cursor.y)
+  return tuple
 
 def menu(header, options, width):
   if len(options) > 26: raise ValueError('Cannot have a menu with more than 26 options')

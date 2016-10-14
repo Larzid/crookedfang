@@ -9,9 +9,6 @@ class Spell:
     self.spell_range = spell_range
     self.effect = effect
 
-def spell(owner, caster):
-  if owner.spell.effect(owner, caster) == 'cancelled': return 'cancelled'
-  
 def cast_heal(owner, caster, target=None):
   if target is None:
     target = caster
@@ -40,6 +37,19 @@ def cast_confuse(owner, caster, target=None):
   target.ai.owner = target
   globals.message('The eyes of the ' + target.name + ' look vacant, as he starts to stumble around!', libtcod.light_green)
 
+def cast_fireball(owner, caster, target=None):
+  if target is None:
+    globals.message('Select target tile with movement keys, [ENTER] to confirm and [BACKSPACE] to cancel')
+    (x, y) = get_input.target_area(caster)
+  else:
+    (x, y) = (target.x, target.y)
+  if x is None: return 'cancelled'
+  globals.message('The fireball explodes, burning everything within ' + str(owner.spell.spell_range) + ' tiles!', libtcod.orange)
+  victims = [victim for victim in globals.objects() if victim.distance(x, y) <= owner.spell.spell_range and victim.fighter]
+  for victim in victims:
+    globals.message('The ' + victim.name + ' gets burned for ' + str(owner.spell.power) + ' hit points.', libtcod.orange)
+    victim.fighter.take_damage(caster, owner.spell.power)
+
 #def cast_possess(owner, caster):
 #  if len(allies) < MAX_ALLIES:
 #    monster = target_monster(caster)
@@ -57,12 +67,3 @@ def cast_confuse(owner, caster, target=None):
 #    monster.always_visible = True
 #    message('The eyes of the ' + monster.name + ' look straight ahead, it is ready to obey!', libtcod.light_green)
 
-#def cast_fireball(owner, caster):
-#  message('Select target tile with movement keys, [ENTER] to confirm and [BACKSPACE] to cancel')
-#  (x, y) = target_area(caster)
-#  if x is None: return 'cancelled'
-#  message('The fireball explodes, burning everything within ' + str(owner.spell.spell_range) + ' tiles!', libtcod.orange)
-#  victims = [victim for victim in objects if victim.distance(x, y) <= owner.spell.spell_range and victim.fighter]
-#  for victim in victims:
-#    message('The ' + victim.name + ' gets burned for ' + str(owner.spell.power) + ' hit points.', libtcod.orange)
-#    victim.fighter.take_damage(caster, owner.spell.power)

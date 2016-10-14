@@ -54,6 +54,20 @@ def populate_level(max_room_monsters=MAX_ROOM_MONSTERS):
     final_list.extend(populate_room(room, num_monsters))
   return final_list
 
+def room_items(room, num_items):
+  items_list = []
+  for i in range(num_items):
+    item = gen_item(room)
+    items_list.append(item)
+  return items_list
+
+def level_items(max_room_items=MAX_ROOM_ITEMS):
+  final_list = []
+  for room in globals.map().rooms:
+    num_items = libtcod.random_get_int(0, 0, max_room_items)
+    final_list.extend(room_items(room, num_items))
+  return final_list
+
 def gen_item(room=None, x=None, y=None):
   if room is not None and x is None:
     x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
@@ -61,24 +75,24 @@ def gen_item(room=None, x=None, y=None):
   choice = libtcod.random_get_int(0, 0, 100)
   if not globals.is_blocked(x, y):
     choice = libtcod.random_get_int(0, 0, 100)
-    if choice <= 15:
-      item_component = thing.Item(1, use_function=magic.spell)
+    if choice <= 10:
+      item_component = thing.Item(1, use_function=scroll)
+      spell_component = magic.Spell(power=25, spell_range =3 , effect=magic.cast_fireball)
+      item = classes.Object(x, y, chr(151), 'scroll of fireball', libtcod.red, item=item_component, spell=spell_component)
+    elif choice <= 15:
+      item_component = thing.Item(1, use_function=scroll)
       spell_component = magic.Spell(power=40, spell_range =5 , effect=magic.cast_lightning)
       item = classes.Object(x, y, chr(151), 'scroll of lightning bolt', libtcod.light_yellow, item=item_component, spell=spell_component)
     elif choice <= 50:
-      item_component = thing.Item(1, use_function=magic.spell)
+      item_component = thing.Item(1, use_function=scroll)
       spell_component = magic.Spell(power=10, spell_range =5 , effect=magic.cast_confuse)
       item = classes.Object(x, y, chr(151), 'scroll of confusion', libtcod.purple, item=item_component, spell=spell_component)
     else:# choice <= 100:
-      item_component = thing.Item(1, use_function=magic.spell)
+      item_component = thing.Item(1, use_function=scroll)
       spell_component = magic.Spell(power=40, effect=magic.cast_heal)
       item = classes.Object(x, y, chr(144), 'healing potion', libtcod.violet, item=item_component, spell=spell_component)
-#    elif choice == 10:
-#      item_component = thing.Item(1, use_function=magic.spell)
-#      spell_component = magic.Spell(power=25, spell_range =3 , effect=magic.cast_fireball)
-#      item = classes.Object(x, y, chr(151), 'scroll of fireball', libtcod.red, item=item_component, spell=spell_component)
 #    elif choice == 5:
-#      item_component = thing.Item(1, use_function=magic.spell)
+#      item_component = thing.Item(1, use_function=scroll)
 #      spell_component = magic.Spell(power=10, spell_range =5 , effect=magic.cast_possess)
 #      item = classes.Object(0, 0, chr(151), 'scroll of possession', libtcod.green, item=item_component, spell=spell_component)
 #    elif choice == 'sword':
@@ -104,16 +118,6 @@ def gen_item(room=None, x=None, y=None):
 #      item.equipment.bonus_effect = inflict_poison
     return item
     
-def room_items(room, num_items):
-  items_list = []
-  for i in range(num_items):
-    item = gen_item(room)
-    items_list.append(item)
-  return items_list
-
-def level_items(max_room_items=MAX_ROOM_ITEMS):
-  final_list = []
-  for room in globals.map().rooms:
-    num_items = libtcod.random_get_int(0, 0, max_room_items)
-    final_list.extend(room_items(room, num_items))
-  return final_list
+def scroll(owner, caster):
+  if owner.spell.effect(owner, caster) == 'cancelled': return 'cancelled'
+  
