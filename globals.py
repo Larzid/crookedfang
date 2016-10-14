@@ -2,7 +2,7 @@
 import combat
 import classes
 import cartographer
-import demographic
+import generator
 import textwrap
 import ai
 
@@ -90,7 +90,7 @@ def init_map(action, width=None, height=None, map_function=None, max_rooms=None,
         level_map = cartographer.Map(width, height, map_function, max_rooms, min_room_size, max_room_size)
   (player_object.x, player_object.y) = level_map.rooms[0].center()
   level_map.objects.append(player_object)
-  level_map.objects.extend(demographic.populate_level())
+  level_map.objects.extend(generator.populate_level())
 
 def is_blocked (x, y):
   if level_map.topography[x][y].blocked:
