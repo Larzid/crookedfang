@@ -11,15 +11,7 @@ class BasicMonster:
     if self.state == 'playing':
       monster = self.owner
       globals.fov_recompute(monster)
-      target = None
-      enemies = [creature for creature in globals.objects() if creature.ai and creature.ai.state != 'dead' and creature.fighter and creature.fighter.faction != monster.fighter.faction and libtcod.map_is_in_fov(globals.map().fov, creature.x, creature.y)]
-      if len(enemies) > 0:
-        closest_dist = monster.fighter.sight + 1
-        for object in enemies:
-          dist = monster.distance_to(object)
-          if dist < closest_dist:
-            target = object
-            closest_dist = dist
+      target = globals.closest_enemy(monster, monster.fighter.sight)
       if target is not None:
         if monster.distance_to(target) >= 2:
           monster.move_astar(target)
@@ -54,20 +46,30 @@ class PlayerControlled:
       if self.owner.fighter:
         self.owner.fighter.check_status = True
   def level_up(self):
-    if self.owner.fighter.level % 3 == 0: self.owner.fighter.max_hp += 20
-    self.owner.fighter.hp = self.owner.fighter.max_hp
-    if self.owner.fighter.level % 2 == 0: self.owner.fighter.power += 1
-    if self.owner.fighter.level % 2 == 1: self.owner.fighter.defense += 1
-#    choice = None
-#    while choice == None:
-#      choice = menu('Level up! Choose a stat to raise:\n',
-#        [('Constitution (+20 HP, from ' + str(who.fighter.max_hp) + ')', libtcod.red),
-#        ('Strength (+1 attack, from ' + str(who.fighter.power) + ')', libtcod.green),
-#        ('Agility (+1 defense, from ' + str(who.fighter.defense) + ')', libtcod.blue)], 40)
-#    if choice == 0:
-#      who.fighter.base_max_hp += 20
-#      who.fighter.hp += 20
-#    elif choice == 1:
-#      who.fighter.base_power += 1
-#    elif choice == 2:
-#      who.fighter.base_defense += 1
+    choice = None
+    while choice == None:
+      choice = menu('Level up! Choose a stat to raise:\n',
+        [('Constitution (+20 HP, from ' + str(self.owner.fighter.max_hp) + ')', libtcod.red),
+        ('Strength (+1 attack, from ' + str(self.owner.fighter.power) + ')', libtcod.green),
+        ('Agility (+1 defense, from ' + str(self.owner.fighter.defense) + ')', libtcod.blue)], 40)
+    if choice == 0:
+      self.owner.fighter.base_max_hp += 20
+      self.owner.fighter.hp += 20
+    elif choice == 1:
+      self.owner.fighter.base_power += 1
+    elif choice == 2:
+      self.owner.fighter.base_defense += 1
+
+class ConfusedMonster:
+  def __init__(self, old_ai, num_turns):
+    self.action = ''
+    self.state = 'playing'
+    self.old_ai = old_ai
+    self.num_turns = num_turns
+  def take_turn(self):
+    if self.num_turns > 0:
+      self.owner.move(libtcod.random_get_int(0, -1, 1), libtcod.random_get_int(0, -1, 1))
+      self.num_turns -= 1
+    else:
+      self.owner.ai = self.old_ai
+      globals.message('The ' + self.owner.name + ' is no longer confused!', libtcod.red)

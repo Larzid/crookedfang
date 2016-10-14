@@ -49,7 +49,7 @@ class Fighter:
         function = self.death_function
         if function is not None:
           function(self.owner, attacker)
-        if attacker is not None: attacker.fighter.xp += self.xp_bonus
+        if attacker.fighter: attacker.fighter.xp += self.xp_bonus
   def attack(self, target):
     damage = self.power - target.fighter.defense
     if damage > 0:

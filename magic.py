@@ -1,4 +1,6 @@
 ﻿import libtcodpy as libtcod
+import get_input
+import ai
 import globals
 
 class Spell:
@@ -10,29 +12,33 @@ class Spell:
 def spell(owner, caster):
   if owner.spell.effect(owner, caster) == 'cancelled': return 'cancelled'
   
-def cast_heal(owner, caster):
+def cast_heal(owner, caster, target=None):
+  if target is None:
+    target = caster
   if caster.fighter.hp == caster.fighter.max_hp:
     globals.message('You are already at full health.', libtcod.red)
     return 'cancelled'
   globals.message('Your wounds start to feel better!', libtcod.light_violet)
-  caster.fighter.heal(owner.spell.power)
+  target.fighter.heal(owner.spell.power)
 
-#def cast_lightning(owner, caster):
-#  monster = closest_monster(caster ,owner.spell.spell_range)
-#  if monster is None:
-#    message('No enemy is close enough to strike.', libtcod.red)
-#    return 'cancelled'
-#  message('A lighting bolt strikes the ' + monster.name + ' with a loud thunder! The damage is '
-#    + str(owner.spell.power) + ' hit points.', libtcod.light_blue)
-#  monster.fighter.take_damage(caster, owner.spell.power)
+def cast_lightning(owner, caster, target=None):
+  if target is None:
+    target = globals.closest_enemy(caster ,owner.spell.spell_range)
+  if target is None:
+    globals.message('No enemy is close enough to strike.', libtcod.red)
+    return 'cancelled'
+  globals.message('A lighting bolt strikes the ' + target.name + ' with a loud thunder! The damage is '
+    + str(owner.spell.power) + ' hit points.', libtcod.light_blue)
+  target.fighter.take_damage(caster, owner.spell.power)
 
-#def cast_confuse(owner, caster):
-#  monster = target_monster(caster)
-#  if monster is None: return 'cancelled'
-#  old_ai = monster.ai
-#  monster.ai = ConfusedMonster(old_ai, owner.spell.power)
-#  monster.ai.owner = monster
-#  message('The eyes of the ' + monster.name + ' look vacant, as he starts to stumble around!', libtcod.light_green)
+def cast_confuse(owner, caster, target=None):
+  if target is None:
+    target = get_input.target_enemy(caster)
+  if target is None: return 'cancelled'
+  old_ai = target.ai
+  target.ai = ai.ConfusedMonster(old_ai, owner.spell.power)
+  target.ai.owner = target
+  globals.message('The eyes of the ' + target.name + ' look vacant, as he starts to stumble around!', libtcod.light_green)
 
 #def cast_possess(owner, caster):
 #  if len(allies) < MAX_ALLIES:

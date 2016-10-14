@@ -115,6 +115,17 @@ def message(new_msg, color = libtcod.white):
       del mesage_list[0]
     mesage_list.append( (line, color) )
 
+def closest_enemy(actor, max_range):
+  closest_creature = None
+  closest_dist = max_range + 1
+  for object in level_map.objects:
+    if object.fighter and not object == actor and object.ai and object.ai.state != 'dead' and object.fighter and object.fighter.faction != actor.fighter.faction and libtcod.map_is_in_fov(level_map.fov, object.x, object.y):
+      dist = actor.distance_to(object)
+      if dist < closest_dist:
+        closest_creature = object
+        closest_dist = dist
+  return closest_creature
+
 def inflict_poison(attacker, target):
   if libtcod.random_get_int(0, 1, 100) > target.fighter.poison_resist:
     target.fighter.status = 'poison'

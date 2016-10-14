@@ -94,6 +94,39 @@ def look(actor):
     render.all(actor)
     libtcod.console_flush()
 
+def target_enemy(actor):
+  creatures = [obj for obj in globals.objects() if obj.fighter and obj != actor and libtcod.map_is_in_fov(globals.map().fov, obj.x, obj.y)]
+  if len(creatures) == 0: 
+    globals.message('No enemies in range', libtcod.red)
+    return None
+  index = 0
+  render.start_cursor(creatures[index].x, creatures[index].y)
+  actor.ai.state = 'target'
+  render.all(actor)
+  libtcod.console_flush()
+  while actor.ai.state == 'target':
+    key = block_for_key()
+    if key.vk == libtcod.KEY_UP or key.vk == libtcod.KEY_KP8 or key.vk == libtcod.KEY_RIGHT or key.vk == libtcod.KEY_KP6:
+      render.clear_cursor()
+      index += 1
+      if index > len(creatures)-1: index = 0
+      render.start_cursor(creatures[index].x, creatures[index].y)
+    if key.vk == libtcod.KEY_DOWN or key.vk == libtcod.KEY_KP2 or key.vk == libtcod.KEY_LEFT or key.vk == libtcod.KEY_KP4:
+      render.clear_cursor()
+      index -= 1
+      if index < 0: index = len(creatures)-1
+      render.start_cursor(creatures[index].x, creatures[index].y)
+    if key.vk == libtcod.KEY_BACKSPACE:
+      render.clear_cursor()
+      actor.ai.state = 'playing'
+      return None
+    if key.vk == libtcod.KEY_ENTER or key.vk == libtcod.KEY_KPENTER:
+      render.clear_cursor()
+      actor.ai.state = 'playing'
+      return creatures[index]
+    render.all(actor)
+    libtcod.console_flush()
+
 def move_or_attack(actor, dx, dy):
   x = actor.x + dx
   y = actor.y + dy
