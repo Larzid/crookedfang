@@ -48,7 +48,7 @@ class PlayerControlled:
   def level_up(self):
     choice = None
     while choice == None:
-      choice = menu('Level up! Choose a stat to raise:\n',
+      choice = render.menu('Level up! Choose a stat to raise:\n',
         [('Constitution (+20 HP, from ' + str(self.owner.fighter.max_hp) + ')', libtcod.red),
         ('Strength (+1 attack, from ' + str(self.owner.fighter.power) + ')', libtcod.green),
         ('Agility (+1 defense, from ' + str(self.owner.fighter.defense) + ')', libtcod.blue)], 40)

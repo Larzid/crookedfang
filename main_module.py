@@ -15,8 +15,8 @@ render.init_screen()
 # Start new game.
 
 globals.init_player('new')
-globals.init_map('new')
-#globals.init_map('new', map_function=cartographer.make_dungeon)
+#globals.init_map('new')
+globals.init_map('new', width=100, map_function=cartographer.make_dungeon)
 globals.init_game_msgs('new')
 globals.init_turn_counter('new')
 globals.message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)

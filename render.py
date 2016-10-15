@@ -49,14 +49,14 @@ def map():
       visible = libtcod.map_is_in_fov(globals.map().fov, x, y)
       wall = globals.map().topography[x][y].block_sight
       if not visible:
-#        if globals.map().topography[x][y].explored:
-        libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_dark, globals.map().topography[x][y].back_dark)
+        if globals.map().topography[x][y].explored:
+          libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_dark, globals.map().topography[x][y].back_dark)
       else:
         libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_light, globals.map().topography[x][y].back_light)
         globals.map().topography[x][y].explored = True
 
 def draw(object):
-#  if libtcod.map_is_in_fov(globals.map().fov, object.x, object.y):
+  if libtcod.map_is_in_fov(globals.map().fov, object.x, object.y):
     libtcod.console_set_default_foreground(con, object.color)
     libtcod.console_put_char(con, object.x, object.y, object.char, libtcod.BKGND_NONE)
 
