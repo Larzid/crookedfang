@@ -44,7 +44,8 @@ def populate_room(room, num_monsters):
   creature_list = []
   for i in range(num_monsters):
     creature = gen_creature(room)
-    creature_list.append(creature)
+    if creature is not None:
+      creature_list.append(creature)
   return creature_list
 
 def populate_level(max_room_monsters=MAX_ROOM_MONSTERS):

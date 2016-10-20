@@ -154,7 +154,7 @@ def get_cursor():
 
 def menu(header, options, width):
   if len(options) > 26: raise ValueError('Cannot have a menu with more than 26 options')
-  header_height = libtcod.console_get_height_rect(con, 0, 0, width, SCREEN_HEIGHT, header)
+  header_height = libtcod.console_get_height_rect(0, 0, 0, width, SCREEN_HEIGHT, header)
   if header == '':
     header_height =0
   height = len(options) + header_height

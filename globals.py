@@ -5,6 +5,7 @@ import cartographer
 import generator
 import textwrap
 import ai
+import shelve
 
 # The Export class receives values from modules that import it and sets them as module-wise globals.
 # Basically allows to get data from a module without havin to import it.
@@ -33,18 +34,16 @@ def objects():
   return list
 
 def game_msgs():
-  msgs = mesage_list
+  msgs = message_list
   return msgs
 
-def init_game_msgs(action):
-  global mesage_list
-  if action == 'new':
-    mesage_list = []
+def init_game_msgs():
+  global message_list
+  message_list = []
 
-def init_turn_counter(action):
+def init_turn_counter():
   global turn_counter
-  if action == 'new':
-    turn_counter = 0
+  turn_counter = 0
 
 def turn():
   global turn_counter
@@ -56,38 +55,36 @@ def next_turn():
   turn_counter += 1
 
 # Player character initialization.
-def init_player(action):
+def init_player():
   global player_object
-  if action == 'new':
-    fighter_component = combat.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, xp_bonus=350, lvl_base=200, lvl_factor=150, inv_max=26, death_function=combat.player_death)
-    ai_component = ai.PlayerControlled()
-    player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component, ai=ai_component)
+  fighter_component = combat.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, xp_bonus=350, lvl_base=200, lvl_factor=150, inv_max=26, death_function=combat.player_death)
+  ai_component = ai.PlayerControlled()
+  player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component, ai=ai_component)
 
 # Map object initialization
-def init_map(action, width=None, height=None, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
+def init_map(width=None, height=None, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
   global level_map
-  if action == 'new':
-    if width is None and height is None:
-      if map_function is None:
-        level_map = cartographer.Map()
-      elif max_rooms == None:
-        level_map = cartographer.Map(map_function=map_function)
-      else:
-        level_map = cartographer.Map(max_rooms, min_room_size, max_room_size)
-    elif height is None:
-      if map_function is None:
-        level_map = cartographer.Map(width, width)
-      elif max_rooms == None:
-        level_map = cartographer.Map(width, width, map_function)
-      else:
-        level_map = cartographer.Map(width, width, map_function, max_rooms, min_room_size, max_room_size)
+  if width is None and height is None:
+    if map_function is None:
+      level_map = cartographer.Map()
+    elif max_rooms == None:
+      level_map = cartographer.Map(map_function=map_function)
     else:
-      if map_function is None:
-        level_map = cartographer.Map(width, height)
-      elif max_rooms == None:
-        level_map = cartographer.Map(width, height, map_function)
-      else:
-        level_map = cartographer.Map(width, height, map_function, max_rooms, min_room_size, max_room_size)
+      level_map = cartographer.Map(max_rooms, min_room_size, max_room_size)
+  elif height is None:
+    if map_function is None:
+      level_map = cartographer.Map(width, width)
+    elif max_rooms == None:
+      level_map = cartographer.Map(width, width, map_function)
+    else:
+      level_map = cartographer.Map(width, width, map_function, max_rooms, min_room_size, max_room_size)
+  else:
+    if map_function is None:
+      level_map = cartographer.Map(width, height)
+    elif max_rooms == None:
+      level_map = cartographer.Map(width, height, map_function)
+    else:
+      level_map = cartographer.Map(width, height, map_function, max_rooms, min_room_size, max_room_size)
   (player_object.x, player_object.y) = level_map.rooms[0].center()
   level_map.objects.append(player_object)
   level_map.objects.extend(generator.populate_level())
@@ -96,6 +93,49 @@ def init_map(action, width=None, height=None, map_function=None, max_rooms=None,
     if object.item:
       object.send_to_back() 
 
+# Start new game.
+def new_game():
+  init_player()
+#  globals.init_map()
+  init_map(width=100, map_function=cartographer.make_dungeon)
+  init_game_msgs()
+  init_turn_counter()
+  message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
+  message('Did you at least told somebody what you where up to?', libtcod.crimson)
+  message('Well, its kinda late for that.', libtcod.light_purple)
+
+# Main loop.
+def play_game():
+  while not libtcod.console_is_window_closed():
+    next_turn()
+    for object in level_map.objects:
+      if object.fighter and object.fighter.check_status:
+        object.fighter.status_check()
+      if object.fighter and object.ai:
+        object.ai.take_turn()
+    if player_object.ai.action == 'exit':
+      break
+
+def save_game():
+  player_index = level_map.objects.index(player_object)
+  level_map.objects.pop(player_index)
+  file = shelve.open('savegame', 'n')
+  file['map'] = level_map
+  file['player'] = player_object
+  file['messages'] = message_list
+  file['turn'] = turn_counter
+  file.close()
+
+def load_game():
+  global level_map, player_object, message_list, turn_counter
+  file = shelve.open('savegame', 'r')
+  level_map = file['map']
+  level_map.fov = level_map.make_fov_map()
+  player_object = file['player']
+  level_map.objects.insert(0, player_object)
+  message_list = file['messages']
+  turn_counter = file['turn']
+  file.close()
 
 def is_blocked (x, y):
   if level_map.topography[x][y].blocked:
@@ -111,9 +151,9 @@ def fov_recompute(actor):
 def message(new_msg, color = libtcod.white):
   new_msg_lines = textwrap.wrap(new_msg, MSG_WIDTH)
   for line in new_msg_lines:
-    if len(mesage_list) == MSG_HEIGHT:
-      del mesage_list[0]
-    mesage_list.append( (line, color) )
+    if len(message_list) == MSG_HEIGHT:
+      del message_list[0]
+    message_list.append( (line, color) )
 
 def closest_enemy(actor, max_range):
   closest_creature = None

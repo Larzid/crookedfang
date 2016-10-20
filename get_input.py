@@ -19,6 +19,7 @@ def handle_keys(actor):
   if key.vk == libtcod.KEY_ENTER and key.lalt:
     libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
   elif key.vk == libtcod.KEY_ESCAPE:
+    globals.save_game()
     return 'exit'
   if actor.ai.state == 'playing':
     if key.vk == libtcod.KEY_UP or key.vk == libtcod.KEY_KP8:
