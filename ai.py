@@ -53,12 +53,12 @@ class PlayerControlled:
         ('Strength (+1 attack, from ' + str(self.owner.fighter.power) + ')', libtcod.green),
         ('Agility (+1 defense, from ' + str(self.owner.fighter.defense) + ')', libtcod.blue)], 40)
     if choice == 0:
-      self.owner.fighter.base_max_hp += 20
+      self.owner.fighter.max_hp += 20
       self.owner.fighter.hp += 20
     elif choice == 1:
-      self.owner.fighter.base_power += 1
+      self.owner.fighter.power += 1
     elif choice == 2:
-      self.owner.fighter.base_defense += 1
+      self.owner.fighter.defense += 1
 
 class ConfusedMonster:
   def __init__(self, old_ai, num_turns):

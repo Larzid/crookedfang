@@ -33,9 +33,9 @@ def main_menu():
         render.msgbox('\n No saved game to load.\n', 24)
         continue
       globals.play_game()
-#    if choice == 2:
-#      help()
-#      continue
+    if choice == 2:
+      render.help()
+      continue
     elif choice == 3:
       break
 

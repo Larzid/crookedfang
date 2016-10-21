@@ -97,7 +97,7 @@ def init_map(width=None, height=None, map_function=None, max_rooms=None, min_roo
 def new_game():
   init_player()
 #  globals.init_map()
-  init_map(width=100, map_function=cartographer.make_dungeon)
+  init_map(map_function=cartographer.make_dungeon)
   init_game_msgs()
   init_turn_counter()
   message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)

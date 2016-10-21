@@ -61,6 +61,9 @@ def handle_keys(actor):
         if chosen_item is not None:
           chosen_item.drop(actor)
         else: return 'didnt-take-turn'
+      elif key_char == '?':
+        render.help()
+        return 'didnt-take-turn'
       else:
         return 'didnt-take-turn'
 
@@ -98,6 +101,8 @@ def look(actor):
         render.clear_cursor()
         actor.ai.state = 'playing'
         return 'didnt-take-turn'
+      elif key_char == '?':
+        render.help()
     render.all(actor)
     libtcod.console_flush()
 
@@ -133,6 +138,10 @@ def target_area(actor):
       render.clear_cursor()
       actor.ai.state = 'playing'
       return (None, None)
+    else:
+      key_char = chr(key.c)
+      if key_char == '?':
+        render.help()
     render.all(actor)
     libtcod.console_flush()
 
@@ -153,19 +162,23 @@ def target_enemy(actor):
       index += 1
       if index > len(creatures)-1: index = 0
       render.start_cursor(creatures[index].x, creatures[index].y)
-    if key.vk == libtcod.KEY_DOWN or key.vk == libtcod.KEY_KP2 or key.vk == libtcod.KEY_LEFT or key.vk == libtcod.KEY_KP4:
+    elif key.vk == libtcod.KEY_DOWN or key.vk == libtcod.KEY_KP2 or key.vk == libtcod.KEY_LEFT or key.vk == libtcod.KEY_KP4:
       render.clear_cursor()
       index -= 1
       if index < 0: index = len(creatures)-1
       render.start_cursor(creatures[index].x, creatures[index].y)
-    if key.vk == libtcod.KEY_BACKSPACE:
+    elif key.vk == libtcod.KEY_BACKSPACE:
       render.clear_cursor()
       actor.ai.state = 'playing'
       return None
-    if key.vk == libtcod.KEY_ENTER or key.vk == libtcod.KEY_KPENTER:
+    elif key.vk == libtcod.KEY_ENTER or key.vk == libtcod.KEY_KPENTER:
       render.clear_cursor()
       actor.ai.state = 'playing'
       return creatures[index]
+    else:
+      key_char = chr(key.c)
+      if key_char == '?':
+        render.help()
     render.all(actor)
     libtcod.console_flush()
 

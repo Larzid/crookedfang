@@ -186,3 +186,35 @@ def menu(header, options, width):
 def msgbox(text, width=50):
   menu(text,[], width)
   libtcod.console_wait_for_keypress(True)
+
+def help():
+  msgbox('     Movement/Melee Attack    \
+                                 \
+  Up:      Arrow up,    Numpad 8\
+  Down:    Arrow down,  Numpad 2\
+  Left:    Arrow left,  Numpad 4\
+  Right:   Arrow right, Numpad 6\
+  Up+Lft:  Home,        Numpad 7\
+  Up+Rgt:  Page Up,     Numpad 9\
+  Dn+Lft:  End,         Numpad 1\
+  Dn+Rgt:  Page Down,   Numpad 3\
+                                   \
+        Character Actions       \
+                                 \
+  Pick up Item:         g       \
+  Drop Item:            d       \
+  Inventory/Use Item:   i       \
+  Equipment Menu:       e       \
+  Shoot ranged weapon:  f       \
+  Look (start/stop):    l       \
+  Climb Stairs Up:      <       \
+  Decend Stairs Down:   >       \
+                                   \
+       Looking & Targetting     \
+                                 \
+  Cursor movement:  See Above   \
+  Confirm Target:  Enter/Return \
+  Cancell Target:   Back Space  \
+  Stop Looking:         l       \
+                                 \
+  View this screen:     ?', 32)
