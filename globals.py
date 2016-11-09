@@ -112,10 +112,10 @@ def init_map(width=None, height=None, map_function=None, max_rooms=None, min_roo
 def new_game():
   init_player()
 #  globals.init_map()
+  init_level_counter()
   init_map(map_function=cartographer.make_dungeon)
   init_game_msgs()
   init_turn_counter()
-  init_level_counter()
   message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
   message('Did you at least told somebody what you where up to?', libtcod.crimson)
   message('Well, its kinda late for that.', libtcod.light_purple)
@@ -156,6 +156,20 @@ def load_game():
   level_counter = file['d_level']
   max_dungeon_level = file['max_d_lvl']
   file.close()
+
+def save_level(filename):
+  level_map.objects.pop(player_index)
+  file = shelve.open(filename, 'n')
+  file['lvl'] = level_map
+  file.close()
+
+def load_level(filename):
+  global level_map
+  file = shelve.open(filename, 'n')
+  level_map = file['lvl']
+  file.close()
+  level_map.objects.insert(0, player_object)
+  (player_object.x, player_object.y) = level_map.rooms[0].center()
 
 def is_blocked (x, y):
   if level_map.topography[x][y].blocked:
