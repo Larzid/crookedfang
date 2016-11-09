@@ -54,6 +54,21 @@ def next_turn():
   global turn_counter
   turn_counter += 1
 
+def init_level_counter():
+  global level_counter, max_dungeon_level
+  level_counter = 1
+  max_dungeon_level = 1
+
+def d_level():
+  global level_counter
+  counter = level_counter
+  return counter
+
+def max_d_level():
+  global max_dungeon_level
+  max_lvl = max_dungeon_level
+  return max_lvl
+
 # Player character initialization.
 def init_player():
   global player_object
@@ -100,6 +115,7 @@ def new_game():
   init_map(map_function=cartographer.make_dungeon)
   init_game_msgs()
   init_turn_counter()
+  init_level_counter()
   message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
   message('Did you at least told somebody what you where up to?', libtcod.crimson)
   message('Well, its kinda late for that.', libtcod.light_purple)
@@ -124,10 +140,12 @@ def save_game():
   file['player'] = player_object
   file['messages'] = message_list
   file['turn'] = turn_counter
+  file['d_level'] = level_counter
+  file['max_d_lvl'] = max_dungeon_level
   file.close()
 
 def load_game():
-  global level_map, player_object, message_list, turn_counter
+  global level_map, player_object, message_list, turn_counter, level_counter, max_dungeon_level
   file = shelve.open('savegame', 'r')
   level_map = file['map']
   level_map.fov = level_map.make_fov_map()
@@ -135,6 +153,8 @@ def load_game():
   level_map.objects.insert(0, player_object)
   message_list = file['messages']
   turn_counter = file['turn']
+  level_counter = file['d_level']
+  max_dungeon_level = file['max_d_lvl']
   file.close()
 
 def is_blocked (x, y):

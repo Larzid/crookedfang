@@ -81,7 +81,7 @@ def side_bar(actor):
   render_bar(1, 7, BAR_WIDTH, 'XP', globals.player().fighter.xp, globals.player().fighter.lvl_base + globals.player().fighter.level * globals.player().fighter.lvl_factor, libtcod.light_purple, libtcod.darker_purple)
   libtcod.console_print_ex(side_panel, 1 , 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Def: ' + str(globals.player().fighter.defense) )# + ' + ' + str(sum(equip.equipment.defense_bonus for equip in globals.player().fighter.equipment.values() if equip is not None)))
   libtcod.console_print_ex(side_panel, 1 , 10, libtcod.BKGND_NONE, libtcod.LEFT, 'Pow: ' + str(globals.player().fighter.power) )# + ' + ' + str(sum(equip.equipment.power_bonus for equip in globals.player().fighter.equipment.values() if equip is not None)))
-#  libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(dungeon_level))
+  libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(globals.d_level()))
   libtcod.console_blit(side_panel, 0, 0, SCREEN_WIDTH - CAMERA_WIDTH, CAMERA_HEIGHT, 0, CAMERA_WIDTH, 0) 
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
