@@ -64,8 +64,11 @@ class Map:
   def dungeon_floor(self, x, y):
     self.set_tile(x, y, blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia)
   def dungeon_wall(self, x, y):
-    self.set_tile(x, y, blocked=True, block_sight=True, tile_face=chr(173), back_light=libtcod.black, back_dark=libtcod.black, fore_light=libtcod.white, fore_dark=libtcod.dark_gray)
-
+    self.set_tile(x, y, blocked=True,   block_sight=True, tile_face=chr(173), back_light=libtcod.black,        back_dark=libtcod.black,         fore_light=libtcod.white, fore_dark=libtcod.dark_gray)
+  def stairs_down(self, x, y):
+    self.set_tile(x, y, blocked=False, block_sight=False, tile_face=chr(174), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.white, fore_dark=libtcod.darker_gray)
+  def stairs_up(self, x, y):
+    self.set_tile(x, y, blocked=False, block_sight=False, tile_face=chr(175), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.white, fore_dark=libtcod.darker_gray)
   def create_room(self, room):
     for x in range(room.x1 + 1, room.x2):
       for y in range(room.y1 + 1, room.y2):
@@ -120,4 +123,8 @@ def make_dungeon(map, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room
           map.create_h_tunnel(prev_x, new_x, new_y)
       rooms.append(new_room)
       num_rooms += 1
+  (st_dn_x, st_dn_y) = rooms[-1].center()
+  map.stairs_down(st_dn_x, st_dn_y)
+  (st_up_x, st_up_y) = rooms[0].center()
+  map.stairs_up(st_up_x, st_up_y)
   return rooms
