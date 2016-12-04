@@ -164,7 +164,7 @@ def save_level(filename):
   file.close()
 
 def load_level(filename):
-  global level_map
+  global level_map, player_object
   file = shelve.open(filename, 'n')
   level_map = file['lvl']
   file.close()

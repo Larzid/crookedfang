@@ -206,7 +206,7 @@ class Fighter:
     self.xp_bonus = xp_bonus
     self.xp = xp
     self.level = level
-    if inv_max != None
+    if inv_max != None:
       self.inventory = []
       self.inv_max = inv_max
     self.equipment = {'good hand':None, 'off hand':None, 'head':None, 'torso':None, 'feet':None}
