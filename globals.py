@@ -6,6 +6,8 @@ import generator
 import textwrap
 import ai
 import shelve
+import glob
+import os
 
 # The Export class receives values from modules that import it and sets them as module-wise globals.
 # Basically allows to get data from a module without havin to import it.
@@ -110,6 +112,8 @@ def init_map(width=None, height=None, map_function=None, max_rooms=None, min_roo
 
 # Start new game.
 def new_game():
+  for f in glob.glob('lvl*'):
+      os.remove(f)
   init_player()
 #  globals.init_map()
   init_level_counter()
@@ -170,11 +174,10 @@ def save_level(filename):
 
 def load_level(filename):
   global level_map, player_object
-  file = shelve.open(filename, 'n')
+  file = shelve.open(filename, 'r')
   level_map = file['lvl']
   file.close()
   level_map.objects.insert(0, player_object)
-  (player_object.x, player_object.y) = level_map.rooms[0].center()
 
 def next_level():
   global level_counter, max_dungeon_level, level_map
@@ -189,6 +192,7 @@ def next_level():
   level_counter += 1
   try:
     load_level('lvl'+str(level_counter))
+    (player_object.x, player_object.y) = level_map.rooms[0].center()
   except:
     level_map = cartographer.Map(map_function=cartographer.make_dungeon)
     (player_object.x, player_object.y) = level_map.rooms[0].center()
@@ -198,6 +202,7 @@ def next_level():
     for object in level_map.objects:
       if object.item:
         object.send_to_back()
+  player_object.ai.action = 'playing'
 
 def previous_level():
   global level_counter, max_dungeon_level, level_map
@@ -206,6 +211,7 @@ def previous_level():
   level_counter -= 1
   try:
     load_level('lvl'+str(level_counter))
+    (player_object.x, player_object.y) = level_map.rooms[-1].center()
   except:
     level_map = cartographer.Map(map_function=cartographer.make_dungeon)
     (player_object.x, player_object.y) = level_map.rooms[-1].center()
@@ -214,7 +220,8 @@ def previous_level():
     level_map.objects.extend(generator.level_items())
     for object in level_map.objects:
       if object.item:
-        object.send_to_back() 
+        object.send_to_back()
+  player_object.ai.action = 'playing'
 
 def is_blocked (x, y):
   if level_map.topography[x][y].blocked:
