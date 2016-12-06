@@ -131,6 +131,10 @@ def play_game():
         object.ai.take_turn()
     if player_object.ai.action == 'exit':
       break
+    if player_object.ai.action == 'next-level':
+      next_level()
+    if player_object.ai.action == 'previous-level':
+      previous_level()
 
 def save_game():
   player_index = level_map.objects.index(player_object)
@@ -158,6 +162,7 @@ def load_game():
   file.close()
 
 def save_level(filename):
+  player_index = level_map.objects.index(player_object)
   level_map.objects.pop(player_index)
   file = shelve.open(filename, 'n')
   file['lvl'] = level_map
@@ -170,6 +175,46 @@ def load_level(filename):
   file.close()
   level_map.objects.insert(0, player_object)
   (player_object.x, player_object.y) = level_map.rooms[0].center()
+
+def next_level():
+  global level_counter, max_dungeon_level, level_map
+  if level_counter + 1 > max_dungeon_level:
+    message('You take a moment to rest, and recover your strength.', libtcod.light_violet)
+    player_object.fighter.heal(player_object.fighter.max_hp / 2)
+    message('After a rare moment of peace, you descend deeper into the heart of the dungeon...', libtcod.red)
+    max_dungeon_level += 1
+  else:
+    message('You descend deeper into the heart of the dungeon...', libtcod.red)
+  save_level('lvl'+str(level_counter))
+  level_counter += 1
+  try:
+    load_level('lvl'+str(level_counter))
+  except:
+    level_map = cartographer.Map(map_function=cartographer.make_dungeon)
+    (player_object.x, player_object.y) = level_map.rooms[0].center()
+    level_map.objects.append(player_object)
+    level_map.objects.extend(generator.populate_level())
+    level_map.objects.extend(generator.level_items())
+    for object in level_map.objects:
+      if object.item:
+        object.send_to_back()
+
+def previous_level():
+  global level_counter, max_dungeon_level, level_map
+  message('You ascend into a higher level of the dungeon...', libtcod.red)
+  save_level('lvl'+str(level_counter))
+  level_counter -= 1
+  try:
+    load_level('lvl'+str(level_counter))
+  except:
+    level_map = cartographer.Map(map_function=cartographer.make_dungeon)
+    (player_object.x, player_object.y) = level_map.rooms[-1].center()
+    level_map.objects.append(player_object)
+    level_map.objects.extend(generator.populate_level())
+    level_map.objects.extend(generator.level_items())
+    for object in level_map.objects:
+      if object.item:
+        object.send_to_back() 
 
 def is_blocked (x, y):
   if level_map.topography[x][y].blocked:

@@ -64,6 +64,12 @@ def handle_keys(actor):
       elif key_char == '?':
         render.help()
         return 'didnt-take-turn'
+      elif key_char == '>':
+        if globals.map().topography[actor.x][actor.y].tile_face == chr(174):
+          return 'next-level'
+      elif key_char == '<':
+        if globals.map().topography[actor.x][actor.y].tile_face == chr(175):
+          return 'previous-level'
       else:
         return 'didnt-take-turn'
 
