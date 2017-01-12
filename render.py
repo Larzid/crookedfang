@@ -33,6 +33,7 @@ def init_ui():
   cursor = classes.Object(0, 0, '', 'cursor', libtcod.white)
 
 def all(actor): # Call the functions to draw everything in the screen.
+  libtcod.console_clear(con)ssh
   globals.fov_recompute(actor)
   map()
   for object in globals.objects():
