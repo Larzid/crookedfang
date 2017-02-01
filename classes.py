@@ -1,9 +1,10 @@
 ﻿import libtcodpy as libtcod
 import globals
+import thing
 import math
 
 class Object: # Player, NPCs, Items... almost anything on the map is an object.
-  def __init__(self, x, y, char, name, color, blocks=False, fighter=None, ai=None, item=None, spell=None):
+  def __init__(self, x, y, char, name, color, blocks=False, fighter=None, ai=None, item=None, spell=None, equipment=None):
     self.x = x
     self.y = y
     self.char = char
@@ -22,6 +23,11 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
     self.spell = spell
     if self.spell:
       self.spell.owner = self
+    self.equipment = equipment
+    if self.equipment:
+      self.equipment.owner = self
+      self.item = thing.Item(1, stackable=False)
+      self.item.owner = self
   def move(self, dx, dy):
     if not globals.is_blocked(self.x + dx, self.y + dy):
       self.x += dx

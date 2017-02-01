@@ -1,6 +1,7 @@
 ﻿import libtcodpy as libtcod
 import render
 import globals
+import magic
 
 INVENTORY_WIDTH = 50
 
@@ -60,6 +61,30 @@ def handle_keys(actor):
         chosen_item = inventory_menu(actor, 'Press the key next to an item to drop it, or any other to cancel.\n')
         if chosen_item is not None:
           chosen_item.drop(actor)
+        else: return 'didnt-take-turn'
+      elif key_char == 'e':
+        chosen_equipment = equipment_menu(actor)
+        if chosen_equipment is not None and type(chosen_equipment) is not str:
+          chosen_equipment.equipment.toggle_equip(actor)
+        elif type(chosen_equipment) is str:
+          if chosen_equipment == 'good hand' or chosen_equipment == 'off hand': chosen_equipment = 'hand'
+          items = [obj for obj in actor.fighter.inventory if obj.equipment and obj.equipment.slot == chosen_equipment]
+          text = [(' ' + obj.char + ' ' + obj.name, obj.color) for obj in actor.fighter.inventory if obj.equipment and obj.equipment.slot == chosen_equipment]
+          if len(items) == 0: 
+            render.msgbox('No equipable items', 20)
+            return 'didnt-take-turn'
+          else:  
+            item = render.menu('Select item to equip', text, 25)
+            if item is not None:
+              items[item].equipment.toggle_equip(actor)
+            else: return 'didnt-take-turn'
+      elif key_char == 'f':
+        if actor.fighter.equipment['good hand'] is not None and actor.fighter.equipment['good hand'].equipment.ammo:
+          action = magic.shoot_weapon(actor, 'good hand')
+          if action == 'cancelled': return 'didnt-take-turn'
+        elif actor.fighter.equipment['off hand'] is not None and actor.fighter.equipment['off hand'].equipment.ammo:
+          globals.msgbox("Can't shoot with off hand", 26)
+          return 'didnt-take-turn'
         else: return 'didnt-take-turn'
       elif key_char == '?':
         render.help()
@@ -210,3 +235,27 @@ def inventory_menu(actor, header):
   index = render.menu(header, options, INVENTORY_WIDTH)
   if index is None or len(actor.fighter.inventory) == 0: return None
   return actor.fighter.inventory[index].item
+
+def equipment_menu(actor):
+  options = actor.fighter.equipment.keys()
+  text = []
+  for option in options:
+    if actor.fighter.equipment[option] == None:
+      text.append((' ' + option.capitalize() + ' - ' + 'empty', libtcod.darker_red))
+    else :
+      text.append((' ' + option.capitalize() + ' - ' + actor.fighter.equipment[option].name, actor.fighter.equipment[option].color))
+  index = render.menu('Equipment', text, 25)
+  if index is None: return None
+  if actor.fighter.equipment[options[index]] is None: return options[index]
+  return actor.fighter.equipment[options[index]]
+
+def equipable_items(actor, slot):
+  items = [(' ' + obj.char + ' ' + obj.name, obj.color) for obj in actor.fighter.inventory if obj.equipment and obj.equipment.slot == slot]
+  text = [(' ' + obj.char + ' ' + obj.name, obj.color) for obj in actor.fighter.inventory if obj.equipment and obj.equipment.slot == chosen_equipment]
+  if len(items) == 0: 
+    render.msgbox('No equipable items')
+    return None
+  else:
+    item = render.menu('Select item to equip', text, 25)
+    if item is None: return None
+    return items[item]

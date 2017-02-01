@@ -3,7 +3,7 @@ import libtcodpy as libtcod # "The Doryen Library" v1.5.1 Source: https://bitbuc
 # classes.py - Here are the classes shared between modules (Tile, Object and Rect).
 # component.py - The game components are defined here.
 # ai. py - Artificial Inteligence classes.
-import cartographer # This handles the map object (tecniaclly a class but it deserves special treatment).
+# cartographer - This handles the map object (tecniaclly a class but it deserves special treatment).
 # demographic.py - Functions to generate creatures and items and populate areas.
 import render # All related to displaying stuff on the screen.
 # get_input - Self explainatory.
@@ -29,10 +29,11 @@ def main_menu():
       try:
         globals.load_game()
         render.init_ui()
+        globals.play_game()
       except:
         render.msgbox('\n No saved game to load.\n', 24)
         continue
-      globals.play_game()
+      
     if choice == 2:
       render.help()
       continue

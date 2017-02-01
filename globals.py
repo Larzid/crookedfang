@@ -2,7 +2,6 @@
 import combat
 import classes
 import cartographer
-import generator
 import textwrap
 import ai
 import shelve
@@ -80,6 +79,7 @@ def init_player():
 
 # Map object initialization
 def init_map(width=None, height=None, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
+  import generator
   global level_map
   if width is None and height is None:
     if map_function is None:
@@ -112,8 +112,9 @@ def init_map(width=None, height=None, map_function=None, max_rooms=None, min_roo
 
 # Start new game.
 def new_game():
+  os.remove('savegame')
   for f in glob.glob('lvl*'):
-      os.remove(f)
+    os.remove(f)
   init_player()
 #  globals.init_map()
   init_level_counter()
@@ -156,14 +157,14 @@ def load_game():
   global level_map, player_object, message_list, turn_counter, level_counter, max_dungeon_level
   file = shelve.open('savegame', 'r')
   level_map = file['map']
-  level_map.fov = level_map.make_fov_map()
   player_object = file['player']
-  level_map.objects.insert(0, player_object)
   message_list = file['messages']
   turn_counter = file['turn']
   level_counter = file['d_level']
   max_dungeon_level = file['max_d_lvl']
   file.close()
+  level_map.fov = level_map.make_fov_map()
+  level_map.objects.insert(0, player_object)
 
 def save_level(filename):
   player_index = level_map.objects.index(player_object)
@@ -194,6 +195,7 @@ def next_level():
     load_level('lvl'+str(level_counter))
     (player_object.x, player_object.y) = level_map.rooms[0].center()
   except:
+    import generator
     level_map = cartographer.Map(map_function=cartographer.make_dungeon)
     (player_object.x, player_object.y) = level_map.rooms[0].center()
     level_map.objects.append(player_object)
@@ -213,6 +215,7 @@ def previous_level():
     load_level('lvl'+str(level_counter))
     (player_object.x, player_object.y) = level_map.rooms[-1].center()
   except:
+    import generator
     level_map = cartographer.Map(map_function=cartographer.make_dungeon)
     (player_object.x, player_object.y) = level_map.rooms[-1].center()
     level_map.objects.append(player_object)

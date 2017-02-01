@@ -67,3 +67,42 @@ def cast_fireball(owner, caster, target=None):
 #    monster.always_visible = True
 #    message('The eyes of the ' + monster.name + ' look straight ahead, it is ready to obey!', libtcod.light_green)
 
+def projectile_attack(attacker, projectile, target):
+  libtcod.line_init(attacker.x, attacker.y, target.x, target.y)
+  hit = True
+  (x, y) = libtcod.line_step()
+  while (not x is None):
+    for obj in globals.objects():
+      if obj.blocks and x == obj.x and y == obj.y and obj != attacker and obj != target:
+        hit = False
+        break
+    (x, y) = libtcod.line_step()
+  if hit == True:
+    if projectile.item.projectile_bonus is not None:
+      if attacker.fighter.equipment['good hand'] is not None and attacker.fighter.equipment['good hand'].equipment.ammo and projectile.item.ammo and attacker.fighter.equipment['good hand'].equipment.ammo == projectile.item.ammo:
+        damage = attacker.fighter.power + projectile.item.projectile_bonus
+      else: damage = attacker.fighter.base_power + projectile.item.projectile_bonus
+    else: damage = attacker.fighter.base_power
+    globals.message(attacker.name.capitalize() + ' shoot ' + target.name + ' with ' + projectile.name + ' for ' + str(damage) + 'hit points.', libtcod.silver)
+    target.fighter.take_damage(attacker, damage)
+  else:
+    globals.message('No clear shot for ' + target.name, libtcod.red)
+    return 'cancelled'
+
+def shoot_weapon(actor, hand):
+  import render
+  import generator
+  items = [obj for obj in actor.fighter.inventory if obj.item.ammo and obj.item.ammo == actor.fighter.equipment[hand].equipment.ammo]
+  text = [(' ' + obj.char + ' ' + obj.name, obj.color) for obj in actor.fighter.inventory if obj.item.ammo and obj.item.ammo == actor.fighter.equipment['good hand'].equipment.ammo]
+  if len(items) == 0: 
+    globals.msgbox("You don't have any " + actor.fighter.equipment[hand].equipment.ammo, 20)
+    return 'cancelled'
+  else:  
+    item = render.menu('Select projectile', text, 25)
+    if item is not None:
+      if not generator.projectile(items[item], actor) == 'cancelled':
+        if items[item].item.qty > 1:
+          items[item].item.qty -= 1
+        else:
+          actor.fighter.inventory.remove(items[item])
+      else: return 'cancelled'

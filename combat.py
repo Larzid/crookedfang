@@ -1,14 +1,15 @@
 ﻿import libtcodpy as libtcod
 import globals
+import glob
 
 class Fighter:
   def __init__(self, faction, hp, defense, power, sight, poison_resist, status=None, status_inflictor=None, check_status=True, xp_bonus=None, lvl_base=None, lvl_factor=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
     self.faction = faction
-    self.max_hp = hp
+    self.base_max_hp = hp
     self.hp = hp
-    self.defense = defense
-    self.power = power
-    self.sight = sight
+    self.base_defense = defense
+    self.base_power = power
+    self.base_sight = sight
     self.poison_resist = poison_resist
     if status == None: status = 'normal'
     self.status = status
@@ -31,16 +32,32 @@ class Fighter:
     self.last_hurt = last_hurt
     self.nat_atk_effect = nat_atk_effect
   @property
+  def max_hp(self):
+    bonus = sum(equip.equipment.max_hp_bonus for equip in self.equipment.values() if equip is not None)
+    return self.base_max_hp + bonus
+  @property
+  def defense(self):
+    bonus = sum(equip.equipment.defense_bonus for equip in self.equipment.values() if equip is not None)
+    return self.base_defense + bonus
+  @property
+  def power(self):
+    bonus = sum(equip.equipment.power_bonus for equip in self.equipment.values() if equip is not None)
+    return self.base_power + bonus
+  @property
+  def sight(self):
+    bonus = sum(equip.equipment.sight_bonus for equip in self.equipment.values() if equip is not None)
+    return self.base_sight + bonus
+  @property
   def secondary_effect(self):
-#    if self.equipment is None or (self.equipment['good hand'] is None and self.equipment['off hand'] is None):
-    return [self.nat_atk_effect]
-#    else:
-#      sec_effect = []
-#      if self.equipment['good hand'] is not None:
-#        sec_effect.append(self.equipment['good hand'].equipment.bonus_effect)
-#      if self.equipment['off hand'] is not None:
-#        sec_effect.append(self.equipment['off hand'].equipment.bonus_effect)
-#      return sec_effect
+    if self.equipment is None or (self.equipment['good hand'] is None and self.equipment['off hand'] is None):
+      return [self.nat_atk_effect]
+    else:
+      sec_effect = []
+      if self.equipment['good hand'] is not None:
+        sec_effect.append(self.equipment['good hand'].equipment.bonus_effect)
+      if self.equipment['off hand'] is not None:
+        sec_effect.append(self.equipment['off hand'].equipment.bonus_effect)
+      return sec_effect
   def take_damage(self, attacker, damage):
     if damage > 0:
       self.hp -= damage
@@ -107,8 +124,8 @@ def player_death(player, attacker):
   player.blocks = False
   player.name = 'remains of ' + player.name
   player.send_to_back()
-#  for f in glob.glob('lvl*'):
-#    os.remove(f)
+  for f in glob.glob('lvl*'):
+    os.remove(f)
 
 def monster_death(monster, attacker):
 #  eq = [piece for piece in monster.fighter.equipment.values() if piece is not None]
