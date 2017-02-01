@@ -33,7 +33,7 @@ def init_ui():
   cursor = classes.Object(0, 0, '', 'cursor', libtcod.white)
 
 def all(actor): # Call the functions to draw everything in the screen.
-  libtcod.console_clear(con)ssh
+  libtcod.console_clear(con)
   globals.fov_recompute(actor)
   map()
   for object in globals.objects():
@@ -50,8 +50,8 @@ def map():
       visible = libtcod.map_is_in_fov(globals.map().fov, x, y)
       wall = globals.map().topography[x][y].block_sight
       if not visible:
-        #if globals.map().topography[x][y].explored:
-        libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_dark, globals.map().topography[x][y].back_dark)
+        if globals.map().topography[x][y].explored:
+          libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_dark, globals.map().topography[x][y].back_dark)
       else:
         libtcod.console_put_char_ex(con, x, y, globals.map().topography[x][y].tile_face, globals.map().topography[x][y].fore_light, globals.map().topography[x][y].back_light)
         globals.map().topography[x][y].explored = True
