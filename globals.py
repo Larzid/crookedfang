@@ -2,22 +2,14 @@
 import combat
 import classes
 import cartographer
+import render
+import combat
+import descriptor
 import textwrap
 import ai
 import shelve
 import glob
 import os
-
-# The Export class receives values from modules that import it and sets them as module-wise globals.
-# Basically allows to get data from a module without havin to import it.
-class Export:
-  def msg_width(self, width):
-    global MSG_WIDTH
-    MSG_WIDTH = width
-
-  def msg_height(self, height):
-    global MSG_HEIGHT
-    MSG_HEIGHT = height
 
 # Global player reference.
 def player():
@@ -73,9 +65,7 @@ def max_d_level():
 # Player character initialization.
 def init_player():
   global player_object
-  fighter_component = combat.Fighter(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, xp_bonus=350, lvl_base=200, lvl_factor=150, inv_max=26, death_function=combat.player_death)
-  ai_component = ai.PlayerControlled()
-  player_object = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component, ai=ai_component)
+  player_object = descriptor.creatures('player', 0, 0)
 
 # Map object initialization
 def init_map(width=None, height=None, map_function=None, max_rooms=None, min_room_size=None, max_room_size=None):
@@ -112,7 +102,6 @@ def init_map(width=None, height=None, map_function=None, max_rooms=None, min_roo
 
 # Start new game.
 def new_game():
-  os.remove('savegame')
   for f in glob.glob('lvl*'):
     os.remove(f)
   init_player()
@@ -121,18 +110,18 @@ def new_game():
   init_map(map_function=cartographer.make_dungeon)
   init_game_msgs()
   init_turn_counter()
-  message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
-  message('Did you at least told somebody what you where up to?', libtcod.crimson)
-  message('Well, its kinda late for that.', libtcod.light_purple)
+  render.message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
+  render.message('Did you at least told somebody what you where up to?', libtcod.crimson)
+  render.message('Well, its kinda late for that.', libtcod.light_purple)
 
 # Main loop.
 def play_game():
   while not libtcod.console_is_window_closed():
     next_turn()
     for object in level_map.objects:
-      if object.fighter and object.fighter.check_status:
-        object.fighter.status_check()
-      if object.fighter and object.ai:
+      if object.creature and object.creature.check_status:
+        object.creature.status_check()
+      if object.creature and object.ai:
         object.ai.take_turn()
     if player_object.ai.action == 'exit':
       break
@@ -183,12 +172,12 @@ def load_level(filename):
 def next_level():
   global level_counter, max_dungeon_level, level_map
   if level_counter + 1 > max_dungeon_level:
-    message('You take a moment to rest, and recover your strength.', libtcod.light_violet)
-    player_object.fighter.heal(player_object.fighter.max_hp / 2)
-    message('After a rare moment of peace, you descend deeper into the heart of the dungeon...', libtcod.red)
+    render.message('You take a moment to rest, and recover your strength.', libtcod.light_violet)
+    player_object.creature.heal(player_object.creature.max_hp / 2)
+    render.message('After a rare moment of peace, you descend deeper into the heart of the dungeon...', libtcod.red)
     max_dungeon_level += 1
   else:
-    message('You descend deeper into the heart of the dungeon...', libtcod.red)
+    render.message('You descend deeper into the heart of the dungeon...', libtcod.red)
   save_level('lvl'+str(level_counter))
   level_counter += 1
   try:
@@ -208,7 +197,7 @@ def next_level():
 
 def previous_level():
   global level_counter, max_dungeon_level, level_map
-  message('You ascend into a higher level of the dungeon...', libtcod.red)
+  render.message('You ascend into a higher level of the dungeon...', libtcod.red)
   save_level('lvl'+str(level_counter))
   level_counter -= 1
   try:
@@ -235,20 +224,14 @@ def is_blocked (x, y):
   return False
 
 def fov_recompute(actor):
-  libtcod.map_compute_fov(level_map.fov, actor.x, actor.y, actor.fighter.sight, True, 0)
+  libtcod.map_compute_fov(level_map.fov, actor.x, actor.y, actor.creature.sight, True, 0)
 
-def message(new_msg, color = libtcod.white):
-  new_msg_lines = textwrap.wrap(new_msg, MSG_WIDTH)
-  for line in new_msg_lines:
-    if len(message_list) == MSG_HEIGHT:
-      del message_list[0]
-    message_list.append( (line, color) )
 
 def closest_enemy(actor, max_range):
   closest_creature = None
   closest_dist = max_range + 1
   for object in level_map.objects:
-    if object.fighter and not object == actor and object.ai and object.ai.state != 'dead' and object.fighter and object.fighter.faction != actor.fighter.faction and libtcod.map_is_in_fov(level_map.fov, object.x, object.y):
+    if object.creature and not object == actor and object.ai and object.ai.state != 'dead' and object.creature and object.creature.faction != actor.creature.faction and libtcod.map_is_in_fov(level_map.fov, object.x, object.y):
       dist = actor.distance_to(object)
       if dist < closest_dist:
         closest_creature = object
@@ -256,10 +239,10 @@ def closest_enemy(actor, max_range):
   return closest_creature
 
 def inflict_poison(attacker, target):
-  if libtcod.random_get_int(0, 1, 100) > target.fighter.poison_resist:
-    target.fighter.status = 'poison'
-    target.fighter.status_inflictor = attacker
+  if libtcod.random_get_int(0, 1, 100) > target.creature.poison_resist:
+    target.creature.status = 'poison'
+    target.creature.status_inflictor = attacker
     if target == player_object: 
-      message(target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.', libtcod.purple)
+      render.message(target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.', libtcod.purple)
     if attacker == player_object:
-      message(attacker.name.capitalize() + ' has poisoned ' + target.name + '.', libtcod.fuchsia)
+      render.message(attacker.name.capitalize() + ' has poisoned ' + target.name + '.', libtcod.fuchsia)

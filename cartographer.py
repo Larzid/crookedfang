@@ -1,5 +1,4 @@
 ﻿import libtcodpy as libtcod
-import render
 import globals
 
 # Default map size. 

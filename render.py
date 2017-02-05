@@ -2,6 +2,7 @@ import libtcodpy as libtcod
 import globals
 import classes
 import get_input
+import textwrap
 
 # Screen size in tiles.
 SCREEN_WIDTH = 80
@@ -14,15 +15,20 @@ CAMERA_HEIGHT = 53
 
 BAR_WIDTH = 13
 
-# When importing globals: value (value) to globals.
-export = globals.Export()
-export.msg_width(SCREEN_WIDTH - 2)
-export.msg_height(SCREEN_HEIGHT - CAMERA_HEIGHT - 1)
+msg_width = SCREEN_WIDTH - 2
+msg_height = SCREEN_HEIGHT - CAMERA_HEIGHT - 1
 
 def init_screen():
   libtcod.console_set_custom_font('generic_rl_fnt.png', libtcod.FONT_TYPE_GRAYSCALE | libtcod.FONT_LAYOUT_ASCII_INROW)
   libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Crooked Fang', False) 
   libtcod.sys_set_fps(LIMIT_FPS)
+
+def title_screen():
+  img = libtcod.image_load('menu_background.png')
+  libtcod.image_blit_2x(img, 0, 0, 0)
+  libtcod.console_set_default_foreground(0, libtcod.light_yellow)
+  libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT/2-4, libtcod.BKGND_NONE, libtcod.CENTER, 'CROOKED FANG')
+  libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT-2, libtcod.BKGND_NONE, libtcod.CENTER, 'By Larzid')
 
 def init_ui():
   global con, con_width, con_height, side_panel, msg_panel, cursor
@@ -77,11 +83,11 @@ def side_bar(actor):
   libtcod.console_set_default_background(side_panel, libtcod.black)
   libtcod.console_clear(side_panel)
   if actor == globals.player(): libtcod.console_print_frame(side_panel,0, 2, 15, 10, clear=True)
-  libtcod.console_print_ex(side_panel, 1 , 3, libtcod.BKGND_NONE, libtcod.LEFT, globals.player().name.capitalize() + ' lvl: ' + str(globals.player().fighter.level))
-  render_bar(1, 5, BAR_WIDTH, 'HP', globals.player().fighter.hp, globals.player().fighter.max_hp, libtcod.light_red, libtcod.darker_red)
-  render_bar(1, 7, BAR_WIDTH, 'XP', globals.player().fighter.xp, globals.player().fighter.lvl_base + globals.player().fighter.level * globals.player().fighter.lvl_factor, libtcod.light_purple, libtcod.darker_purple)
-  libtcod.console_print_ex(side_panel, 1 , 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Def: ' + str(globals.player().fighter.defense) + ' + ' + str(sum(equip.equipment.defense_bonus for equip in globals.player().fighter.equipment.values() if equip is not None)))
-  libtcod.console_print_ex(side_panel, 1 , 10, libtcod.BKGND_NONE, libtcod.LEFT, 'Pow: ' + str(globals.player().fighter.power) + ' + ' + str(sum(equip.equipment.power_bonus for equip in globals.player().fighter.equipment.values() if equip is not None)))
+  libtcod.console_print_ex(side_panel, 1 , 3, libtcod.BKGND_NONE, libtcod.LEFT, globals.player().name.capitalize() + ' lvl: ' + str(globals.player().creature.level))
+  render_bar(1, 5, BAR_WIDTH, 'HP', globals.player().creature.hp, globals.player().creature.max_hp, libtcod.light_red, libtcod.darker_red)
+  render_bar(1, 7, BAR_WIDTH, 'XP', globals.player().creature.xp, globals.player().creature.lvl_base + globals.player().creature.level * globals.player().creature.lvl_factor, libtcod.light_purple, libtcod.darker_purple)
+  libtcod.console_print_ex(side_panel, 1 , 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Def: ' + str(globals.player().creature.defense) + ' + ' + str(sum(equip.equipment.defense_bonus for equip in globals.player().creature.equipment.values() if equip is not None)))
+  libtcod.console_print_ex(side_panel, 1 , 10, libtcod.BKGND_NONE, libtcod.LEFT, 'Pow: ' + str(globals.player().creature.power) + ' + ' + str(sum(equip.equipment.power_bonus for equip in globals.player().creature.equipment.values() if equip is not None)))
   libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(globals.d_level()))
   libtcod.console_blit(side_panel, 0, 0, SCREEN_WIDTH - CAMERA_WIDTH, CAMERA_HEIGHT, 0, CAMERA_WIDTH, 0) 
 
@@ -117,13 +123,20 @@ def msg_bar(actor):
     libtcod.console_print_ex(msg_panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, 'Target: ' + look_names())
   libtcod.console_blit(msg_panel, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT - CAMERA_HEIGHT, 0, 0, CAMERA_HEIGHT)
 
+def message(new_msg, color = libtcod.white):
+  new_msg_lines = textwrap.wrap(new_msg, msg_width)
+  for line in new_msg_lines:
+    if len(globals.game_msgs()) == msg_height:
+      del globals.game_msgs()[0]
+    globals.game_msgs().append( (line, color) )
+
 def look_names():
   (x, y) = (cursor.x, cursor.y)
   names = []
   for obj in globals.objects():
     if obj.x == x and obj.y == y and libtcod.map_is_in_fov(globals.map().fov, obj.x, obj.y):
-      if obj.fighter:
-        names.append(obj.name + '(lv' + str(obj.fighter.level) +')')
+      if obj.creature:
+        names.append(obj.name + '(lv' + str(obj.creature.level) +')')
       else:
         names.append(obj.name)
   if len(names) != 0:

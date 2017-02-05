@@ -1,110 +1,9 @@
 ﻿import libtcodpy as libtcod
+import get_input
+import ai
 import globals
+import render
 import glob
-
-class Fighter:
-  def __init__(self, faction, hp, defense, power, sight, poison_resist, status=None, status_inflictor=None, check_status=True, xp_bonus=None, lvl_base=None, lvl_factor=None, level=None, inv_max=None, death_function=None, last_hurt=None, nat_atk_effect=None): # Any component expected to change over gameplay should be added to player_status in next_level() and previous_level()
-    self.faction = faction
-    self.base_max_hp = hp
-    self.hp = hp
-    self.base_defense = defense
-    self.base_power = power
-    self.base_sight = sight
-    self.poison_resist = poison_resist
-    if status == None: status = 'normal'
-    self.status = status
-    self.status_inflictor = status_inflictor
-    self.check_status = check_status
-    if xp_bonus == None: xp_bonus = 0
-    self.xp_bonus = xp_bonus
-    self.xp = 0
-    if lvl_base == None: lvl_base = 0
-    self.lvl_base = lvl_base
-    if lvl_factor == None: lvl_factor = 0
-    self.lvl_factor = lvl_factor
-    if level == None: level = 1
-    self.level = level
-    self.inventory = []
-    if inv_max == None: inv_max = 1
-    self.inv_max = inv_max
-    self.equipment = {'good hand':None, 'off hand':None, 'head':None, 'torso':None, 'feet':None}
-    self.death_function = death_function
-    self.last_hurt = last_hurt
-    self.nat_atk_effect = nat_atk_effect
-  @property
-  def max_hp(self):
-    bonus = sum(equip.equipment.max_hp_bonus for equip in self.equipment.values() if equip is not None)
-    return self.base_max_hp + bonus
-  @property
-  def defense(self):
-    bonus = sum(equip.equipment.defense_bonus for equip in self.equipment.values() if equip is not None)
-    return self.base_defense + bonus
-  @property
-  def power(self):
-    bonus = sum(equip.equipment.power_bonus for equip in self.equipment.values() if equip is not None)
-    return self.base_power + bonus
-  @property
-  def sight(self):
-    bonus = sum(equip.equipment.sight_bonus for equip in self.equipment.values() if equip is not None)
-    return self.base_sight + bonus
-  @property
-  def secondary_effect(self):
-    if self.equipment is None or (self.equipment['good hand'] is None and self.equipment['off hand'] is None):
-      return [self.nat_atk_effect]
-    else:
-      sec_effect = []
-      if self.equipment['good hand'] is not None:
-        sec_effect.append(self.equipment['good hand'].equipment.bonus_effect)
-      if self.equipment['off hand'] is not None:
-        sec_effect.append(self.equipment['off hand'].equipment.bonus_effect)
-      return sec_effect
-  def take_damage(self, attacker, damage):
-    if damage > 0:
-      self.hp -= damage
-      self.last_hurt = globals.turn()
-      if self.hp <= 0:
-        function = self.death_function
-        if function is not None:
-          function(self.owner, attacker)
-        if attacker.fighter: attacker.fighter.xp += self.xp_bonus
-  def attack(self, target):
-    damage = self.power - target.fighter.defense
-    if damage > 0:
-      if target == globals.player():
-        globals.message(self.owner.name.capitalize() + '(lv' + str(self.level) + ')' + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
-      elif self.owner == globals.player():
-        globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + '(lv' + str(target.fighter.level) + ')' + ' for ' + str(damage) + ' hit points.', libtcod.green)
-      target.fighter.take_damage(self.owner, damage)
-      if target.fighter is not None:
-        effect_list = self.secondary_effect
-        if len(effect_list)>0:
-          for effect in effect_list:
-            if effect is not None:
-              effect(self.owner, target)
-    else:
-      globals.message(self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no efect!', libtcod.red)
-  def heal(self, amount):
-    self.hp += amount
-    if self.hp > self.max_hp:
-      self.hp = self.max_hp
-  def status_check(self):
-    check_level_up(self)
-    if self.status == 'normal' and self.last_hurt is not None and globals.turn() - self.last_hurt != 0 and (globals.turn() - self.last_hurt) % 10 == 0:
-      self.heal(1)
-    if self.status == 'poison':
-      if self.owner == globals.player():
-        globals.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.red)
-      if self.status_inflictor == globals.player():
-        globals.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
-      self.take_damage(self.status_inflictor, max(int(self.max_hp / 100), 1))
-      if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
-        if self.status_inflictor == globals.player():
-          globals.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.orange)
-        self.status = 'normal'
-        self.status_inflictor = None
-        if self.owner == globals.player(): 
-          globals.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
-    self.check_status = False
 
 def check_level_up(who):
   level_up_xp = who.lvl_base + who.level * who.lvl_factor
@@ -112,12 +11,12 @@ def check_level_up(who):
     who.level += 1
     who.xp -= level_up_xp
     if who.owner == globals.player():
-      globals.message('Your battle skills grow stronger! You reached level ' + str(who.level) + '!', libtcod.yellow)
+      render.message('Your battle skills grow stronger! You reached level ' + str(who.level) + '!', libtcod.yellow)
     who.owner.ai.level_up()
 
 def player_death(player, attacker):
-  if attacker is not None: globals.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
-  else: globals.message('You died of severe battle wounds.', libtcod.red)
+  if attacker is not None: render.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
+  else: render.message('You died of severe battle wounds.', libtcod.red)
   player.ai.state = 'dead'
   player.char = '%'
   player.color = libtcod.dark_red
@@ -128,17 +27,128 @@ def player_death(player, attacker):
     os.remove(f)
 
 def monster_death(monster, attacker):
-#  eq = [piece for piece in monster.fighter.equipment.values() if piece is not None]
+#  eq = [piece for piece in monster.creature.equipment.values() if piece is not None]
 #  for obj in eq:
 #    obj.equipment.dequip(monster)
-#  for obj in monster.fighter.inventory:
+#  for obj in monster.creature.inventory:
 #    obj.item.drop(monster)
-  if attacker is not None: globals.message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
-  else: globals.message(monster.name.capitalize() + ' died of severe battle wounds.', libtcod.orange)
+  if attacker is not None: render.message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
+  else: render.message(monster.name.capitalize() + ' died of severe battle wounds.', libtcod.orange)
   monster.char = '%'
   monster.color = libtcod.dark_red
   monster.blocks = False
-  monster.fighter = None
+  monster.creature = None
   monster.ai = None
   monster.name = 'remains of ' + monster.name
   monster.send_to_back()
+
+class Spell:
+  def __init__(self, power=None, spell_range=None, effect=None):
+    self.power = power
+    self.spell_range = spell_range
+    self.effect = effect
+
+def cast_heal(owner, caster, target=None):
+  if target is None:
+    target = caster
+  if caster.creature.hp == caster.creature.max_hp:
+    render.message('You are already at full health.', libtcod.red)
+    return 'cancelled'
+  render.message('Your wounds start to feel better!', libtcod.light_violet)
+  target.creature.heal(owner.spell.power)
+
+def cast_lightning(owner, caster, target=None):
+  if target is None:
+    target = globals.closest_enemy(caster ,owner.spell.spell_range)
+  if target is None:
+    render.message('No enemy is close enough to strike.', libtcod.red)
+    return 'cancelled'
+  render.message('A lighting bolt strikes the ' + target.name + ' with a loud thunder! The damage is '
+    + str(owner.spell.power) + ' hit points.', libtcod.light_blue)
+  target.creature.take_damage(caster, owner.spell.power)
+
+def cast_confuse(owner, caster, target=None):
+  if target is None:
+    target = get_input.target_enemy(caster)
+  if target is None: return 'cancelled'
+  old_ai = target.ai
+  target.ai = ai.ConfusedMonster(old_ai, owner.spell.power)
+  target.ai.owner = target
+  render.message('The eyes of the ' + target.name + ' look vacant, as he starts to stumble around!', libtcod.light_green)
+
+def cast_fireball(owner, caster, target=None):
+  if target is None:
+    render.message('Select target tile with movement keys, [ENTER] to confirm and [BACKSPACE] to cancel')
+    (x, y) = get_input.target_area(caster)
+  else:
+    (x, y) = (target.x, target.y)
+  if x is None: return 'cancelled'
+  render.message('The fireball explodes, burning everything within ' + str(owner.spell.spell_range) + ' tiles!', libtcod.orange)
+  victims = [victim for victim in globals.objects() if victim.distance(x, y) <= owner.spell.spell_range and victim.creature]
+  for victim in victims:
+    render.message('The ' + victim.name + ' gets burned for ' + str(owner.spell.power) + ' hit points.', libtcod.orange)
+    victim.creature.take_damage(caster, owner.spell.power)
+
+#def cast_possess(owner, caster):
+#  if len(allies) < MAX_ALLIES:
+#    monster = target_monster(caster)
+#    if monster is None: return 'cancelled'
+#    objects.remove(monster)
+#    allies.append(monster)
+#    old_ai = monster.ai
+#    old_color = monster.color
+#    old_char = monster.char
+#    old_death = monster.creature.death_function
+#    monster.char = '@'
+#    monster.creature.death_function = ally_death
+#    monster.ai = PossessedMonster(old_ai, old_color, old_char, old_death, owner.spell.power)
+#    monster.ai.owner = monster
+#    monster.always_visible = True
+#    message('The eyes of the ' + monster.name + ' look straight ahead, it is ready to obey!', libtcod.light_green)
+
+def projectile_attack(attacker, projectile, target):
+  target = get_input.target_enemy(attacker)
+  if target is None: return 'cancelled'
+  libtcod.line_init(attacker.x, attacker.y, target.x, target.y)
+  hit = True
+  (x, y) = libtcod.line_step()
+  while (not x is None):
+    for obj in globals.objects():
+      if obj.blocks and x == obj.x and y == obj.y and obj != attacker and obj != target:
+        hit = False
+        break
+    (x, y) = libtcod.line_step()
+  if hit == True:
+    if projectile.item.projectile_bonus is not None:
+      if attacker.creature.equipment['good hand'] is not None and attacker.creature.equipment['good hand'].equipment.ammo and projectile.item.ammo and attacker.creature.equipment['good hand'].equipment.ammo == projectile.item.ammo:
+        damage = attacker.creature.power + projectile.item.projectile_bonus
+      else: damage = attacker.creature.base_power + projectile.item.projectile_bonus
+    else: damage = attacker.creature.base_power
+    render.message(attacker.name.capitalize() + ' shoot ' + target.name + ' with ' + projectile.name + ' for ' + str(damage) + 'hit points.', libtcod.silver)
+    target.creature.take_damage(attacker, damage)
+  else:
+    render.message('No clear shot for ' + target.name, libtcod.red)
+    return 'cancelled'
+
+def shoot_weapon(actor, hand):
+  import generator
+  items = [obj for obj in actor.creature.inventory if obj.item.ammo and obj.item.ammo == actor.creature.equipment[hand].equipment.ammo]
+  text = [(' ' + obj.char + ' ' + obj.name, obj.color) for obj in actor.creature.inventory if obj.item.ammo and obj.item.ammo == actor.creature.equipment['good hand'].equipment.ammo]
+  if len(items) == 0: 
+    render.msgbox("You don't have any " + actor.creature.equipment[hand].equipment.ammo, 20)
+    return 'cancelled'
+  else:  
+    item = render.menu('Select projectile', text, 25)
+    if item is not None:
+      if not projectile(items[item], actor) == 'cancelled':
+        if items[item].item.qty > 1:
+          items[item].item.qty -= 1
+        else:
+          actor.creature.inventory.remove(items[item])
+      else: return 'cancelled'
+
+def projectile(proj, attacker):
+  import get_input
+  target = get_input.target_enemy(attacker)
+  if target is None: return 'cancelled'
+  if combat.projectile_attack(attacker, proj, target) == 'cancelled': return 'cancelled'
