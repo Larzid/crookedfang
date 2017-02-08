@@ -42,12 +42,6 @@ def monster_death(monster, attacker):
   monster.name = 'remains of ' + monster.name
   monster.send_to_back()
 
-class Spell:
-  def __init__(self, power=None, spell_range=None, effect=None):
-    self.power = power
-    self.spell_range = spell_range
-    self.effect = effect
-
 def cast_heal(owner, caster, target=None):
   if target is None:
     target = caster
@@ -131,7 +125,6 @@ def projectile_attack(attacker, projectile, target):
     return 'cancelled'
 
 def shoot_weapon(actor, hand):
-  import generator
   items = [obj for obj in actor.creature.inventory if obj.item.ammo and obj.item.ammo == actor.creature.equipment[hand].equipment.ammo]
   text = [(' ' + obj.char + ' ' + obj.name, obj.color) for obj in actor.creature.inventory if obj.item.ammo and obj.item.ammo == actor.creature.equipment['good hand'].equipment.ammo]
   if len(items) == 0: 
@@ -148,7 +141,6 @@ def shoot_weapon(actor, hand):
       else: return 'cancelled'
 
 def projectile(proj, attacker):
-  import get_input
   target = get_input.target_enemy(attacker)
   if target is None: return 'cancelled'
-  if combat.projectile_attack(attacker, proj, target) == 'cancelled': return 'cancelled'
+  if projectile_attack(attacker, proj, target) == 'cancelled': return 'cancelled'

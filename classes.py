@@ -170,6 +170,12 @@ class Creature:
           render.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
     self.check_status = False
 
+class Spell:
+  def __init__(self, power=None, spell_range=None, effect=None):
+    self.power = power
+    self.spell_range = spell_range
+    self.effect = effect
+
 class Item:
   def __init__(self, qty, ammo=None, projectile_bonus=None, stackable=True , use_function=None):
     self.qty = qty

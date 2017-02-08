@@ -48,23 +48,23 @@ def item_chances():
 def items(id, x, y):
   if id == 'fireball':
     item_component = classes.Item(1, use_function=scroll)
-    spell_component = combat.Spell(power=25, spell_range =3 , effect=combat.cast_fireball)
+    spell_component = classes.Spell(power=25, spell_range =3 , effect=combat.cast_fireball)
     item = classes.Object(x, y, chr(151), 'scroll of fireball', libtcod.red, item=item_component, spell=spell_component)
   elif id == 'lightning':
     item_component = classes.Item(1, use_function=scroll)
-    spell_component = combat.Spell(power=40, spell_range =5 , effect=combat.cast_lightning)
+    spell_component = classes.Spell(power=40, spell_range =5 , effect=combat.cast_lightning)
     item = classes.Object(x, y, chr(151), 'scroll of lightning bolt', libtcod.light_yellow, item=item_component, spell=spell_component)
   elif id == 'confuse':
     item_component = classes.Item(1, use_function=scroll)
-    spell_component = combat.Spell(power=10, spell_range =5 , effect=combat.cast_confuse)
+    spell_component = classes.Spell(power=10, spell_range =5 , effect=combat.cast_confuse)
     item = classes.Object(x, y, chr(151), 'scroll of confusion', libtcod.purple, item=item_component, spell=spell_component)
   elif id == 'heal':
     item_component = classes.Item(1, use_function=scroll)
-    spell_component = combat.Spell(power=40, effect=combat.cast_heal)
+    spell_component = classes.Spell(power=40, effect=combat.cast_heal)
     item = classes.Object(x, y, chr(144), 'healing potion', libtcod.violet, item=item_component, spell=spell_component)
 #  elif id == 'possess':
 #    item_component = classes.Item(1, use_function=scroll)
-#    spell_component = combat.Spell(power=10, spell_range =5 , effect=combat.cast_possess)
+#    spell_component = classes.Spell(power=10, spell_range =5 , effect=combat.cast_possess)
 #    item = classes.Object(0, 0, chr(151), 'scroll of possession', libtcod.green, item=item_component, spell=spell_component)
   elif id == 'sword':
     equipment_component = classes.Equipment(slot='hand', power_bonus = 3)
@@ -76,7 +76,7 @@ def items(id, x, y):
     equipment_component = classes.Equipment(slot='hand', power_bonus = 1)
     item = classes.Object(x, y, chr(150), 'dagger', libtcod.silver, equipment=equipment_component)
   elif id == 'throwing knife':
-    item_component = classes.Item(1, projectile_bonus = 2, use_function=projectile)
+    item_component = classes.Item(1, projectile_bonus = 2, use_function=combat.projectile)
     item = classes.Object(x, y, chr(150), 'throwing knife', libtcod.light_blue, item=item_component)
   elif id == 'bow':
     equipment_component = classes.Equipment(slot='hand', ammo='arrow', power_bonus = 1)
