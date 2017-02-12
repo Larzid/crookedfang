@@ -1,5 +1,5 @@
 ﻿import libtcodpy as libtcod
-import globals
+import data
 
 # Default map size. 
 MAP_WIDTH = 65
@@ -126,7 +126,7 @@ def make_dungeon(map, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room
       num_rooms += 1
   (st_dn_x, st_dn_y) = rooms[-1].center()
   map.stairs_down(st_dn_x, st_dn_y)
-  if globals.d_level() > 1:
+  if data.d_level() > 1:
     (st_up_x, st_up_y) = rooms[0].center()
     map.stairs_up(st_up_x, st_up_y)
   return rooms

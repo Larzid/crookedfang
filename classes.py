@@ -1,5 +1,5 @@
 ﻿import libtcodpy as libtcod
-import globals
+import data
 import render
 import combat
 import math
@@ -31,7 +31,7 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
       self.item = Item(1, stackable=False)
       self.item.owner = self
   def move(self, dx, dy):
-    if not globals.is_blocked(self.x + dx, self.y + dy):
+    if not data.is_blocked(self.x + dx, self.y + dy):
       self.x += dx
       self.y += dy
   def move_towards(self, target_x, target_y):
@@ -46,8 +46,8 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
     dy = other.y - self.y
     return math.sqrt(dx ** 2 + dy ** 2)
   def move_astar(self, target):
-    fov = globals.map().make_fov_map()
-    for obj in globals.objects():
+    fov = data.map().make_fov_map()
+    for obj in data.objects():
       if obj.blocks and obj != self and obj != target:
         libtcod.map_set_properties(fov, obj.x, obj.y, True, False)
     my_path = libtcod.path_new_using_map(fov, 1.41)
@@ -61,8 +61,8 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
       self.move_towards(target.x, target.y)
     libtcod.path_delete(my_path)
   def send_to_back(self):
-    globals.objects().remove(self)
-    globals.objects().insert(0, self)
+    data.objects().remove(self)
+    data.objects().insert(0, self)
   def distance(self, x, y):
     return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
@@ -125,7 +125,7 @@ class Creature:
   def take_damage(self, attacker, damage):
     if damage > 0:
       self.hp -= damage
-      self.last_hurt = globals.turn()
+      self.last_hurt = data.turn()
       if self.hp <= 0:
         function = self.death_function
         if function is not None:
@@ -134,9 +134,9 @@ class Creature:
   def attack(self, target):
     damage = self.power - target.creature.defense
     if damage > 0:
-      if target == globals.player():
+      if target == data.player():
         render.message(self.owner.name.capitalize() + '(lv' + str(self.level) + ')' + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
-      elif self.owner == globals.player():
+      elif self.owner == data.player():
         render.message(self.owner.name.capitalize() + ' attacks ' + target.name + '(lv' + str(target.creature.level) + ')' + ' for ' + str(damage) + ' hit points.', libtcod.green)
       target.creature.take_damage(self.owner, damage)
       if target.creature is not None:
@@ -153,20 +153,20 @@ class Creature:
       self.hp = self.max_hp
   def status_check(self):
     combat.check_level_up(self)
-    if self.status == 'normal' and self.last_hurt is not None and globals.turn() - self.last_hurt != 0 and (globals.turn() - self.last_hurt) % 10 == 0:
+    if self.status == 'normal' and self.last_hurt is not None and data.turn() - self.last_hurt != 0 and (data.turn() - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.status == 'poison':
-      if self.owner == globals.player():
+      if self.owner == data.player():
         render.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.red)
-      if self.status_inflictor == globals.player():
+      if self.status_inflictor == data.player():
         render.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
       self.take_damage(self.status_inflictor, max(int(self.max_hp / 100), 1))
       if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
-        if self.status_inflictor == globals.player():
+        if self.status_inflictor == data.player():
           render.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.orange)
         self.status = 'normal'
         self.status_inflictor = None
-        if self.owner == globals.player(): 
+        if self.owner == data.player(): 
           render.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
     self.check_status = False
 
@@ -185,7 +185,7 @@ class Item:
     self.use_function = use_function
   def pick_up(self, owner):
     if len(owner.creature.inventory) >= owner.creature.inv_max:
-      if owner == globals.player(): render.msgbox('Your inventory is full, cannot pick up ' + self.owner.name + '.')
+      if owner == data.player(): render.msgbox('Your inventory is full, cannot pick up ' + self.owner.name + '.')
     else:
       if self.stackable:
         has_item = False
@@ -193,23 +193,23 @@ class Item:
           if package.name == self.owner.name:
             has_item = True
             package.item.qty = package.item.qty + self.qty
-            globals.objects().remove(self.owner)
-            if owner == globals.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + ' and now have ' + str(package.item.qty) + '!', libtcod.green)
+            data.objects().remove(self.owner)
+            if owner == data.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + ' and now have ' + str(package.item.qty) + '!', libtcod.green)
             break
         if not has_item:
           owner.creature.inventory.append(self.owner)
-          globals.objects().remove(self.owner)
-          if owner == globals.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
+          data.objects().remove(self.owner)
+          if owner == data.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
       else:
         owner.creature.inventory.append(self.owner)
-        globals.objects().remove(self.owner)
-        if owner == globals.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
+        data.objects().remove(self.owner)
+        if owner == data.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
   def use(self, user):
     if self.owner.equipment:
       self.owner.equipment.toggle_equip(user)
       return
     if self.use_function is None:
-      if user == globals.player(): render.msgbox('The ' + self.owner.name + ' cannot be used.')
+      if user == data.player(): render.msgbox('The ' + self.owner.name + ' cannot be used.')
     else:
       if self.use_function(self.owner, user) != 'cancelled':
         if self.qty > 1:
@@ -217,10 +217,10 @@ class Item:
         else:
           user.creature.inventory.remove(self.owner)
   def drop(self, owner):
-    globals.objects().append(self.owner)
+    data.objects().append(self.owner)
     owner.creature.inventory.remove(self.owner)
     (self.owner.x, self.owner.y) = (owner.x, owner.y)
-    if owner == globals.player(): render.message('You dropped ' + str(self.qty) + ' ' + self.owner.name + '.', libtcod.yellow)
+    if owner == data.player(): render.message('You dropped ' + str(self.qty) + ' ' + self.owner.name + '.', libtcod.yellow)
 
 class Equipment:
   def __init__(self, slot, ammo=None, power_bonus=0, defense_bonus=0, max_hp_bonus=0, sight_bonus=0, bonus_effect=None):
@@ -243,36 +243,36 @@ class Equipment:
         self.is_equipped = True
         user.creature.equipment['good hand'] = self.owner
         user.creature.inventory.remove(self.owner)
-        if user == globals.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
+        if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
       elif user.creature.equipment['off hand'] is None:
         self.is_equipped = True
         user.creature.equipment['off hand'] = self.owner
         user.creature.inventory.remove(self.owner)
-        if user == globals.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
+        if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
       else:
         hand = render.menu('Equip to which hand?',[('good hand', libtcod.white), ('off hand', libtcod.white)], 22)
         if hand == 0:
           user.creature.equipment['good hand'].equipment.is_equipped = False
           user.creature.inventory.append(user.creature.equipment['good hand'])
-          if user == globals.player(): render.message('Dequipped ' + user.creature.equipment['good hand'].name + ' from ' + 'good hand' + '.', libtcod.light_yellow)
+          if user == data.player(): render.message('Dequipped ' + user.creature.equipment['good hand'].name + ' from ' + 'good hand' + '.', libtcod.light_yellow)
           self.is_equipped = True
           user.creature.equipment['good hand'] = self.owner
           user.creature.inventory.remove(self.owner)
-          if user == globals.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
+          if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
         elif hand == 1:
           user.creature.equipment['off hand'].equipment.is_equipped = False
           user.creature.inventory.append(user.creature.equipment['off hand'])
-          if user == globals.player(): render.message('Dequipped ' + user.creature.equipment['off hand'].name + ' from ' + 'off hand' + '.', libtcod.light_yellow)
+          if user == data.player(): render.message('Dequipped ' + user.creature.equipment['off hand'].name + ' from ' + 'off hand' + '.', libtcod.light_yellow)
           self.is_equipped = True
           user.creature.equipment['off hand'] = self.owner
           user.creature.inventory.remove(self.owner)
-          if user == globals.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
+          if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
     else:
       if user.creature.equipment[self.slot] is not None: user.creature.equipment[self.slot].equipment.dequip(user)
       self.is_equipped = True
       user.creature.equipment[self.slot] = self.owner
       user.creature.inventory.remove(self.owner)
-      if user == globals.player(): render.message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
+      if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
   def dequip(self, user):
     if not self.is_equipped: return
     if self.owner == user.creature.equipment['good hand']: user.creature.equipment['good hand'] = None
@@ -280,4 +280,4 @@ class Equipment:
     else: user.creature.equipment[self.slot] = None
     user.creature.inventory.append(self.owner)
     self.is_equipped = False
-    if user == globals.player(): render.message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
+    if user == data.player(): render.message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)

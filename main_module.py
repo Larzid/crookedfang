@@ -7,7 +7,7 @@ import libtcodpy as libtcod # "The Doryen Library" v1.5.1 Source: https://bitbuc
 # demographic.py - Functions to generate creatures and items and populate areas.
 import render # All related to displaying stuff on the screen.
 # get_input - Self explainatory.
-import globals # Here live the global functions and objects (player, map, object list, etc.).
+import data # Here live the global functions and objects (player, map, object list, etc.).
 
 def main_menu():
   while not libtcod.console_is_window_closed():
@@ -15,14 +15,14 @@ def main_menu():
     options =[('New Game', libtcod.green), ('Continue Game', libtcod.white), ('Controls', libtcod.sky), ('Quit', libtcod.red)]
     choice = render.menu('', options, 18)
     if choice == 0:
-      globals.new_game()
+      data.new_game()
       render.init_ui()
-      globals.play_game()
+      data.play_game()
     if choice == 1:
       try:
-        globals.load_game()
+        data.load_game()
         render.init_ui()
-        globals.play_game()
+        data.play_game()
       except:
         render.msgbox('\n No saved game to load.\n', 24)
         continue

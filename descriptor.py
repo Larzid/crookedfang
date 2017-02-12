@@ -1,5 +1,5 @@
 import libtcodpy as libtcod
-import globals
+import data
 import classes
 import combat
 import ai
@@ -17,7 +17,7 @@ def creatures(id, x, y):
     ai_component = ai.PlayerControlled()
     creature = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'snake':
-    creature_component = classes.Creature(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=combat.monster_death, nat_atk_effect=globals.inflict_poison)
+    creature_component = classes.Creature(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=combat.monster_death, nat_atk_effect=data.inflict_poison)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'orc':
@@ -91,6 +91,6 @@ def scroll(owner, caster):
 
 def from_dungeon_level(table):
   for (value, level) in reversed(table):
-    if globals.d_level() >= level:
+    if data.d_level() >= level:
       return value
   return 0

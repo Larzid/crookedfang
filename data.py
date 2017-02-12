@@ -105,7 +105,6 @@ def new_game():
   for f in glob.glob('lvl*'):
     os.remove(f)
   init_player()
-#  globals.init_map()
   init_level_counter()
   init_map(map_function=cartographer.make_dungeon)
   init_game_msgs()
