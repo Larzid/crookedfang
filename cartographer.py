@@ -80,6 +80,13 @@ class Map:
   def create_v_tunnel(self, y1, y2, x):
     for y in range(min(y1, y2), max(y1, y2) + 1):
       self.dungeon_floor(x, y)
+  def is_blocked (self, x, y):
+    if self.topography[x][y].blocked:
+      return True
+    for object in self.objects:
+      if object.blocks and object.x == x and object.y == y:
+        return True
+    return False
 
 def make_arena(map):
   map.topography = [[ Tile(blocked=False, block_sight=False, tile_face=chr(172), back_light=libtcod.darker_sepia, back_dark=libtcod.darkest_sepia, fore_light=libtcod.black, fore_dark=libtcod.darkest_sepia) for y in range(map.height) ] for x in range(map.width) ]
@@ -126,7 +133,7 @@ def make_dungeon(map, max_rooms=MAX_ROOMS, min_room_size=ROOM_MIN_SIZE, max_room
       num_rooms += 1
   (st_dn_x, st_dn_y) = rooms[-1].center()
   map.stairs_down(st_dn_x, st_dn_y)
-  if data.d_level() > 1:
+  if data.state().d_level > 1:
     (st_up_x, st_up_y) = rooms[0].center()
     map.stairs_up(st_up_x, st_up_y)
   return rooms

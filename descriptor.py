@@ -91,6 +91,6 @@ def scroll(owner, caster):
 
 def from_dungeon_level(table):
   for (value, level) in reversed(table):
-    if data.d_level() >= level:
+    if data.state().d_level >= level:
       return value
   return 0

@@ -4,13 +4,14 @@ import ai
 import data
 import render
 import glob
+import os
 
 def check_level_up(who):
   level_up_xp = who.lvl_base + who.level * who.lvl_factor
   if who.xp >= level_up_xp and level_up_xp != 0:
     who.level += 1
     who.xp -= level_up_xp
-    if who.owner == data.player():
+    if who.owner == data.state().player:
       render.message('Your battle skills grow stronger! You reached level ' + str(who.level) + '!', libtcod.yellow)
     who.owner.ai.level_up()
 
@@ -53,7 +54,7 @@ def cast_heal(owner, caster, target=None):
 
 def cast_lightning(owner, caster, target=None):
   if target is None:
-    target = data.closest_enemy(caster ,owner.spell.spell_range)
+    target = caster.creature.closest_enemy(owner.spell.spell_range)
   if target is None:
     render.message('No enemy is close enough to strike.', libtcod.red)
     return 'cancelled'
@@ -78,7 +79,7 @@ def cast_fireball(owner, caster, target=None):
     (x, y) = (target.x, target.y)
   if x is None: return 'cancelled'
   render.message('The fireball explodes, burning everything within ' + str(owner.spell.spell_range) + ' tiles!', libtcod.orange)
-  victims = [victim for victim in data.objects() if victim.distance(x, y) <= owner.spell.spell_range and victim.creature]
+  victims = [victim for victim in data.state().level_map.objects if victim.distance(x, y) <= owner.spell.spell_range and victim.creature]
   for victim in victims:
     render.message('The ' + victim.name + ' gets burned for ' + str(owner.spell.power) + ' hit points.', libtcod.orange)
     victim.creature.take_damage(caster, owner.spell.power)
@@ -107,7 +108,7 @@ def projectile_attack(attacker, projectile, target):
   hit = True
   (x, y) = libtcod.line_step()
   while (not x is None):
-    for obj in data.objects():
+    for obj in data.state().level_map.objects:
       if obj.blocks and x == obj.x and y == obj.y and obj != attacker and obj != target:
         hit = False
         break

@@ -1,7 +1,6 @@
 ﻿import libtcodpy as libtcod
 import data
 import descriptor
-import combat
 
 def random_choice_index(chances):
   dice = libtcod.random_get_int(0, 1, sum(chances))
@@ -22,7 +21,7 @@ def gen_creature(room=None, x=None, y=None):
   if room is not None and x is None:
     x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
     y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
-  if not data.is_blocked(x, y):
+  if not data.state().level_map.is_blocked(x, y):
     choice = random_choice(descriptor.creature_chances())
     creature = descriptor.creatures(choice, x, y)
     return creature
@@ -31,7 +30,7 @@ def gen_item(room=None, x=None, y=None):
   if room is not None and x is None:
     x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
     y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
-  if not data.is_blocked(x, y):
+  if not data.state().level_map.is_blocked(x, y):
     choice = random_choice(descriptor.item_chances())
     item = descriptor.items(choice, x, y)
     if item.equipment and item.equipment.slot == 'hand' and item.equipment.ammo == None and libtcod.random_get_int(0, 1, 100) <= 50:
@@ -59,7 +58,7 @@ def populate_room(room, num_monsters):
 
 def populate_level(max_room_monsters=descriptor.from_dungeon_level([[2, 1], [3, 4], [5, 6]])):
   final_list = []
-  for room in data.map().rooms:
+  for room in data.state().level_map.rooms:
     num_monsters = libtcod.random_get_int(0, 0, max_room_monsters)
     final_list.extend(populate_room(room, num_monsters))
   return final_list
@@ -74,7 +73,7 @@ def room_items(room, num_items):
 
 def level_items(max_room_items=descriptor.from_dungeon_level([[2, 1], [3, 4], [5, 6]])):
   final_list = []
-  for room in data.map().rooms:
+  for room in data.state().level_map.rooms:
     num_items = libtcod.random_get_int(0, 0, max_room_items)
     final_list.extend(room_items(room, num_items))
   return final_list

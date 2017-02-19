@@ -4,6 +4,133 @@ import render
 import combat
 import math
 import combat
+import glob
+import os
+import descriptor
+import cartographer
+import shelve
+
+class GameState:
+  def __init__(self, player=None, level_map=None, messages=None, turn=None, d_level=None, max_d_level=None):
+    self.player = player
+    self.level_map = level_map
+    self.turn = turn
+    self.messages = messages
+    self.d_level = d_level
+    self.max_d_level = max_d_level
+  def new_game(self):
+    for f in glob.glob('lvl*'):
+      os.remove(f)
+    self.player = descriptor.creatures('player', 0, 0)
+    self.d_level = 1
+    self.max_d_level = 1
+    import generator
+    self.level_map = cartographer.Map(map_function=cartographer.make_dungeon)
+    (self.player.x, self.player.y) = self.level_map.rooms[0].center()
+    self.level_map.objects.append(self.player)
+    self.level_map.objects.extend(generator.populate_level())
+    self.level_map.objects.extend(generator.level_items())
+    for object in self.level_map.objects:
+      if object.item:
+        object.send_to_back()
+    self.turn= 0
+    self.messages = []
+    render.message('You were bored, you craved adventure and due to your total lack of common sense and reckless impulsive behavior you came here, to some strange ruins half a world away from what you call civilization!', libtcod.light_cyan)
+    render.message('Did you at least told somebody what you where up to?', libtcod.crimson)
+    render.message('Well, its kinda late for that.', libtcod.light_purple)
+  def save_game(self):
+    player_index = self.level_map.objects.index(self.player)
+    self.level_map.objects.pop(player_index)
+    file = shelve.open('savegame', 'n')
+    file['level_map'] = self.level_map
+    file['player'] = self.player
+    file['messages'] = self.messages
+    file['turn'] = self.turn
+    file['d_level'] = self.d_level
+    file['max_d_level'] = self.max_d_level
+    file.close()
+    file = shelve.open('savegame', 'r')
+    file.close()
+  def load_game(self):
+    file = shelve.open('savegame', 'r')
+    self.level_map = file['level_map']
+    self.level_map.fov = self.level_map.make_fov_map()
+    self.player = file['player']
+    self.level_map.objects.insert(0, self.player)
+    self.messages = file['messages']
+    self.turn = file['turn']
+    self.d_level = file['d_level']
+    self.max_d_level = file['max_d_level']
+    file.close()
+  def play_game(self):
+    while not libtcod.console_is_window_closed():
+      self.next_turn()
+      for object in self.level_map.objects:
+        if object.creature and object.creature.check_status:
+          object.creature.status_check()
+        if object.creature and object.ai:
+          object.ai.take_turn()
+      if self.player.ai.action == 'exit':
+        break
+      if self.player.ai.action == 'next-level':
+        self.next_level()
+      if self.player.ai.action == 'previous-level':
+        self.previous_level()
+  def save_level(self, filename):
+    player_index = self.level_map.objects.index(self.player)
+    self.level_map.objects.pop(player_index)
+    file = shelve.open(filename, 'n')
+    file['lvl'] = self.level_map
+    file.close()
+  def load_level(self, filename):
+    file = shelve.open(filename, 'r')
+    self.level_map = file['lvl']
+    file.close()
+    self.level_map.objects.insert(0, self.player)
+  def next_level(self):
+    if self.d_level + 1 > self.max_d_level:
+      render.message('You take a moment to rest, and recover your strength.', libtcod.light_violet)
+      self.player.creature.heal(self.player.creature.max_hp / 2)
+      render.message('After a rare moment of peace, you descend deeper into the heart of the dungeon...', libtcod.red)
+      self.max_d_level += 1
+    else:
+      render.message('You descend deeper into the heart of the dungeon...', libtcod.red)
+    self.save_level('lvl'+str(self.d_level))
+    self.d_level += 1
+    try:
+      self.load_level('lvl'+str(self.d_level))
+      (self.player.x, self.player.y) = self.level_map.rooms[0].center()
+    except:
+      import generator
+      self.level_map = cartographer.Map(map_function=cartographer.make_dungeon)
+      (self.player.x, self.player.y) = self.level_map.rooms[0].center()
+      self.level_map.objects.append(self.player)
+      self.level_map.objects.extend(generator.populate_level())
+      self.level_map.objects.extend(generator.level_items())
+      for object in self.level_map.objects:
+        if object.item:
+          object.send_to_back()
+    self.player.ai.action = 'playing'
+  def previous_level(self):
+    render.message('You ascend into a higher level of the dungeon...', libtcod.red)
+    self.save_level('lvl'+str(self.d_level))
+    self.d_level -= 1
+    try:
+      self.load_level('lvl'+str(self.d_level))
+      (self.player.x, self.player.y) = self.level_map.rooms[-1].center()
+    except:
+      import generator
+      self.level_map = cartographer.Map(map_function=cartographer.make_dungeon)
+      (self.player.x, self.player.y) = self.level_map.rooms[-1].center()
+      self.level_map.objects.append(self.player)
+      self.level_map.objects.extend(generator.populate_level())
+      self.level_map.objects.extend(generator.level_items())
+      for object in self.level_map.objects:
+        if object.item:
+          object.send_to_back()
+    self.player.ai.action = 'playing'
+  def next_turn(self):
+    self.turn += 1
 
 class Object: # Player, NPCs, Items... almost anything on the map is an object.
   def __init__(self, x, y, char, name, color, blocks=False, creature=None, ai=None, item=None, spell=None, equipment=None):
@@ -31,7 +158,7 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
       self.item = Item(1, stackable=False)
       self.item.owner = self
   def move(self, dx, dy):
-    if not data.is_blocked(self.x + dx, self.y + dy):
+    if not data.state().level_map.is_blocked(self.x + dx, self.y + dy):
       self.x += dx
       self.y += dy
   def move_towards(self, target_x, target_y):
@@ -46,8 +173,8 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
     dy = other.y - self.y
     return math.sqrt(dx ** 2 + dy ** 2)
   def move_astar(self, target):
-    fov = data.map().make_fov_map()
-    for obj in data.objects():
+    fov = data.state().level_map.make_fov_map()
+    for obj in data.state().level_map.objects:
       if obj.blocks and obj != self and obj != target:
         libtcod.map_set_properties(fov, obj.x, obj.y, True, False)
     my_path = libtcod.path_new_using_map(fov, 1.41)
@@ -61,8 +188,8 @@ class Object: # Player, NPCs, Items... almost anything on the map is an object.
       self.move_towards(target.x, target.y)
     libtcod.path_delete(my_path)
   def send_to_back(self):
-    data.objects().remove(self)
-    data.objects().insert(0, self)
+    data.state().level_map.objects.remove(self)
+    data.state().level_map.objects.insert(0, self)
   def distance(self, x, y):
     return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
@@ -122,10 +249,20 @@ class Creature:
       if self.equipment['off hand'] is not None:
         sec_effect.append(self.equipment['off hand'].equipment.bonus_effect)
       return sec_effect
+  def closest_enemy(self, max_range):
+    closest_creature = None
+    closest_dist = max_range + 1
+    for object in data.state().level_map.objects:
+      if object.creature and not object == self and object.ai and object.ai.state != 'dead' and object.creature and object.creature.faction != self.faction and libtcod.map_is_in_fov(data.state().level_map.fov, object.x, object.y):
+        dist = self.owner.distance_to(object)
+        if dist < closest_dist:
+          closest_creature = object
+          closest_dist = dist
+    return closest_creature
   def take_damage(self, attacker, damage):
     if damage > 0:
       self.hp -= damage
-      self.last_hurt = data.turn()
+      self.last_hurt = data.state().turn
       if self.hp <= 0:
         function = self.death_function
         if function is not None:
@@ -134,9 +271,9 @@ class Creature:
   def attack(self, target):
     damage = self.power - target.creature.defense
     if damage > 0:
-      if target == data.player():
+      if target == data.state().player:
         render.message(self.owner.name.capitalize() + '(lv' + str(self.level) + ')' + ' attacks ' + target.name + ' for ' + str(damage) + ' hit points.', libtcod.sepia)
-      elif self.owner == data.player():
+      elif self.owner == data.state().player:
         render.message(self.owner.name.capitalize() + ' attacks ' + target.name + '(lv' + str(target.creature.level) + ')' + ' for ' + str(damage) + ' hit points.', libtcod.green)
       target.creature.take_damage(self.owner, damage)
       if target.creature is not None:
@@ -153,20 +290,20 @@ class Creature:
       self.hp = self.max_hp
   def status_check(self):
     combat.check_level_up(self)
-    if self.status == 'normal' and self.last_hurt is not None and data.turn() - self.last_hurt != 0 and (data.turn() - self.last_hurt) % 10 == 0:
+    if self.status == 'normal' and self.last_hurt is not None and data.state().turn - self.last_hurt != 0 and (data.state().turn - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.status == 'poison':
-      if self.owner == data.player():
+      if self.owner == data.state().player:
         render.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.red)
-      if self.status_inflictor == data.player():
+      if self.status_inflictor == data.state().player:
         render.message(self.owner.name.capitalize() + ' looses ' + str(max(int(self.max_hp / 100), 1)) + ' hit points due to poison.', libtcod.green)
       self.take_damage(self.status_inflictor, max(int(self.max_hp / 100), 1))
       if libtcod.random_get_int(0, 1, 100) <= self.poison_resist:
-        if self.status_inflictor == data.player():
+        if self.status_inflictor == data.state().player:
           render.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.orange)
         self.status = 'normal'
         self.status_inflictor = None
-        if self.owner == data.player(): 
+        if self.owner == data.state().player: 
           render.message(self.owner.name.capitalize() + ' is no longer poisoned.', libtcod.green)
     self.check_status = False
 
@@ -185,7 +322,7 @@ class Item:
     self.use_function = use_function
   def pick_up(self, owner):
     if len(owner.creature.inventory) >= owner.creature.inv_max:
-      if owner == data.player(): render.msgbox('Your inventory is full, cannot pick up ' + self.owner.name + '.')
+      if owner == data.state().player: render.msgbox('Your inventory is full, cannot pick up ' + self.owner.name + '.')
     else:
       if self.stackable:
         has_item = False
@@ -193,23 +330,23 @@ class Item:
           if package.name == self.owner.name:
             has_item = True
             package.item.qty = package.item.qty + self.qty
-            data.objects().remove(self.owner)
-            if owner == data.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + ' and now have ' + str(package.item.qty) + '!', libtcod.green)
+            data.state().level_map.objects.remove(self.owner)
+            if owner == data.state().player: render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + ' and now have ' + str(package.item.qty) + '!', libtcod.green)
             break
         if not has_item:
           owner.creature.inventory.append(self.owner)
-          data.objects().remove(self.owner)
-          if owner == data.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
+          data.state().level_map.objects.remove(self.owner)
+          if owner == data.state().player: render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
       else:
         owner.creature.inventory.append(self.owner)
-        data.objects().remove(self.owner)
-        if owner == data.player(): render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
+        data.state().level_map.objects.remove(self.owner)
+        if owner == data.state().player: render.message('You picked up ' + str(self.qty) + ' ' + self.owner.name + '!', libtcod.green)
   def use(self, user):
     if self.owner.equipment:
       self.owner.equipment.toggle_equip(user)
       return
     if self.use_function is None:
-      if user == data.player(): render.msgbox('The ' + self.owner.name + ' cannot be used.')
+      if user == data.state().player: render.msgbox('The ' + self.owner.name + ' cannot be used.')
     else:
       if self.use_function(self.owner, user) != 'cancelled':
         if self.qty > 1:
@@ -217,10 +354,10 @@ class Item:
         else:
           user.creature.inventory.remove(self.owner)
   def drop(self, owner):
-    data.objects().append(self.owner)
+    data.state().level_map.objects.append(self.owner)
     owner.creature.inventory.remove(self.owner)
     (self.owner.x, self.owner.y) = (owner.x, owner.y)
-    if owner == data.player(): render.message('You dropped ' + str(self.qty) + ' ' + self.owner.name + '.', libtcod.yellow)
+    if owner == data.state().player: render.message('You dropped ' + str(self.qty) + ' ' + self.owner.name + '.', libtcod.yellow)
 
 class Equipment:
   def __init__(self, slot, ammo=None, power_bonus=0, defense_bonus=0, max_hp_bonus=0, sight_bonus=0, bonus_effect=None):
@@ -243,36 +380,36 @@ class Equipment:
         self.is_equipped = True
         user.creature.equipment['good hand'] = self.owner
         user.creature.inventory.remove(self.owner)
-        if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
+        if user == data.state().player: render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
       elif user.creature.equipment['off hand'] is None:
         self.is_equipped = True
         user.creature.equipment['off hand'] = self.owner
         user.creature.inventory.remove(self.owner)
-        if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
+        if user == data.state().player: render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
       else:
         hand = render.menu('Equip to which hand?',[('good hand', libtcod.white), ('off hand', libtcod.white)], 22)
         if hand == 0:
           user.creature.equipment['good hand'].equipment.is_equipped = False
           user.creature.inventory.append(user.creature.equipment['good hand'])
-          if user == data.player(): render.message('Dequipped ' + user.creature.equipment['good hand'].name + ' from ' + 'good hand' + '.', libtcod.light_yellow)
+          if user == data.state().player: render.message('Dequipped ' + user.creature.equipment['good hand'].name + ' from ' + 'good hand' + '.', libtcod.light_yellow)
           self.is_equipped = True
           user.creature.equipment['good hand'] = self.owner
           user.creature.inventory.remove(self.owner)
-          if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
+          if user == data.state().player: render.message('Equipped ' + self.owner.name + ' on ' + 'good hand' + '.', libtcod.light_green)
         elif hand == 1:
           user.creature.equipment['off hand'].equipment.is_equipped = False
           user.creature.inventory.append(user.creature.equipment['off hand'])
-          if user == data.player(): render.message('Dequipped ' + user.creature.equipment['off hand'].name + ' from ' + 'off hand' + '.', libtcod.light_yellow)
+          if user == data.state().player: render.message('Dequipped ' + user.creature.equipment['off hand'].name + ' from ' + 'off hand' + '.', libtcod.light_yellow)
           self.is_equipped = True
           user.creature.equipment['off hand'] = self.owner
           user.creature.inventory.remove(self.owner)
-          if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
+          if user == data.state().player: render.message('Equipped ' + self.owner.name + ' on ' + 'off hand' + '.', libtcod.light_green)
     else:
       if user.creature.equipment[self.slot] is not None: user.creature.equipment[self.slot].equipment.dequip(user)
       self.is_equipped = True
       user.creature.equipment[self.slot] = self.owner
       user.creature.inventory.remove(self.owner)
-      if user == data.player(): render.message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
+      if user == data.state().player: render.message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
   def dequip(self, user):
     if not self.is_equipped: return
     if self.owner == user.creature.equipment['good hand']: user.creature.equipment['good hand'] = None
@@ -280,4 +417,4 @@ class Equipment:
     else: user.creature.equipment[self.slot] = None
     user.creature.inventory.append(self.owner)
     self.is_equipped = False
-    if user == data.player(): render.message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
+    if user == data.state().player: render.message('Dequipped ' + self.owner.name + ' from ' + self.slot + '.', libtcod.light_yellow)
