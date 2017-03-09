@@ -1,6 +1,6 @@
 ﻿import libtcodpy as libtcod
 import render
-import data
+import engine
 import combat
 
 INVENTORY_WIDTH = 50
@@ -20,7 +20,7 @@ def handle_keys(actor):
   if key.vk == libtcod.KEY_ENTER and key.lalt:
     libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
   elif key.vk == libtcod.KEY_ESCAPE:
-    data.state().save_game()
+    engine.state().save_game()
     return 'exit'
   if actor.ai.state == 'playing':
     if key.vk == libtcod.KEY_UP or key.vk == libtcod.KEY_KP8:
@@ -47,7 +47,7 @@ def handle_keys(actor):
         action = look(actor)
         return action
       elif key_char == 'g':
-        for object in data.state().level_map.objects:
+        for object in engine.state().level_map.objects:
           if object.x == actor.x and object.y == actor.y and object.item:
             object.item.pick_up(actor)
             break
@@ -90,10 +90,10 @@ def handle_keys(actor):
         render.help()
         return 'didnt-take-turn'
       elif key_char == '>':
-        if data.state().level_map.topography[actor.x][actor.y].tile_face == chr(174):
+        if engine.state().level_map.topography[actor.x][actor.y].tile_face == chr(174):
           return 'next-level'
       elif key_char == '<':
-        if data.state().level_map.topography[actor.x][actor.y].tile_face == chr(175):
+        if engine.state().level_map.topography[actor.x][actor.y].tile_face == chr(175):
           return 'previous-level'
       else:
         return 'didnt-take-turn'
@@ -177,7 +177,7 @@ def target_area(actor):
     libtcod.console_flush()
 
 def target_enemy(actor):
-  creatures = [obj for obj in data.state().level_map.objects if obj.creature and obj != actor and libtcod.map_is_in_fov(data.state().level_map.fov, obj.x, obj.y)]
+  creatures = [obj for obj in engine.state().level_map.objects if obj.creature and obj != actor and libtcod.map_is_in_fov(engine.state().level_map.fov, obj.x, obj.y)]
   if len(creatures) == 0: 
     render.message('No enemies in range', libtcod.red)
     return None
@@ -217,7 +217,7 @@ def move_or_attack(actor, dx, dy):
   x = actor.x + dx
   y = actor.y + dy
   target = None
-  for object in data.state().level_map.objects:
+  for object in engine.state().level_map.objects:
     if object.x == x and object.y == y and object.creature:
       target = object
       break
@@ -225,7 +225,7 @@ def move_or_attack(actor, dx, dy):
     actor.creature.attack(target)
   else:
     actor.move(dx, dy)
-    data.fov_recompute(actor)
+    libtcod.map_compute_fov(engine.state().level_map.fov, actor.x, actor.y, actor.creature.sight, True, 0)
 
 def inventory_menu(actor, header):
   if len(actor.creature.inventory) == 0:

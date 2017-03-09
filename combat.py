@@ -1,7 +1,7 @@
 ﻿import libtcodpy as libtcod
 import get_input
 import ai
-import data
+import engine
 import render
 import glob
 import os
@@ -11,7 +11,7 @@ def check_level_up(who):
   if who.xp >= level_up_xp and level_up_xp != 0:
     who.level += 1
     who.xp -= level_up_xp
-    if who.owner == data.state().player:
+    if who.owner == engine.state().player:
       render.message('Your battle skills grow stronger! You reached level ' + str(who.level) + '!', libtcod.yellow)
     who.owner.ai.level_up()
 
@@ -79,7 +79,7 @@ def cast_fireball(owner, caster, target=None):
     (x, y) = (target.x, target.y)
   if x is None: return 'cancelled'
   render.message('The fireball explodes, burning everything within ' + str(owner.spell.spell_range) + ' tiles!', libtcod.orange)
-  victims = [victim for victim in data.state().level_map.objects if victim.distance(x, y) <= owner.spell.spell_range and victim.creature]
+  victims = [victim for victim in engine.state().level_map.objects if victim.distance(x, y) <= owner.spell.spell_range and victim.creature]
   for victim in victims:
     render.message('The ' + victim.name + ' gets burned for ' + str(owner.spell.power) + ' hit points.', libtcod.orange)
     victim.creature.take_damage(caster, owner.spell.power)
@@ -108,7 +108,7 @@ def projectile_attack(attacker, projectile, target):
   hit = True
   (x, y) = libtcod.line_step()
   while (not x is None):
-    for obj in data.state().level_map.objects:
+    for obj in engine.state().level_map.objects:
       if obj.blocks and x == obj.x and y == obj.y and obj != attacker and obj != target:
         hit = False
         break

@@ -1,5 +1,5 @@
 import libtcodpy as libtcod
-import data
+import engine
 import classes
 import get_input
 import textwrap
@@ -32,7 +32,7 @@ def title_screen():
 
 def init_ui():
   global con, con_width, con_height, side_panel, msg_panel, cursor
-  (con_width, con_height) = (data.state().level_map.width, data.state().level_map.height)
+  (con_width, con_height) = (engine.state().level_map.width, engine.state().level_map.height)
   con = libtcod.console_new(con_width, con_height)
   side_panel = libtcod.console_new(SCREEN_WIDTH - CAMERA_WIDTH, CAMERA_HEIGHT)
   msg_panel = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT - CAMERA_HEIGHT)
@@ -40,9 +40,9 @@ def init_ui():
 
 def all(actor): # Call the functions to draw everything in the screen.
   libtcod.console_clear(con)
-  data.fov_recompute(actor)
+  libtcod.map_compute_fov(engine.state().level_map.fov, actor.x, actor.y, actor.creature.sight, True, 0)
   map()
-  for object in data.state().level_map.objects:
+  for object in engine.state().level_map.objects:
     if object != actor:
       draw(object)
   draw(actor)
@@ -51,19 +51,19 @@ def all(actor): # Call the functions to draw everything in the screen.
   msg_bar(actor)
 
 def map():
-  for y in range(data.state().level_map.height):
-    for x in range(data.state().level_map.width):
-      visible = libtcod.map_is_in_fov(data.state().level_map.fov, x, y)
-      wall = data.state().level_map.topography[x][y].block_sight
+  for y in range(engine.state().level_map.height):
+    for x in range(engine.state().level_map.width):
+      visible = libtcod.map_is_in_fov(engine.state().level_map.fov, x, y)
+      wall = engine.state().level_map.topography[x][y].block_sight
       if not visible:
-        if data.state().level_map.topography[x][y].explored:
-          libtcod.console_put_char_ex(con, x, y, data.state().level_map.topography[x][y].tile_face, data.state().level_map.topography[x][y].fore_dark, data.state().level_map.topography[x][y].back_dark)
+        if engine.state().level_map.topography[x][y].explored:
+          libtcod.console_put_char_ex(con, x, y, engine.state().level_map.topography[x][y].tile_face, engine.state().level_map.topography[x][y].fore_dark, engine.state().level_map.topography[x][y].back_dark)
       else:
-        libtcod.console_put_char_ex(con, x, y, data.state().level_map.topography[x][y].tile_face, data.state().level_map.topography[x][y].fore_light, data.state().level_map.topography[x][y].back_light)
-        data.state().level_map.topography[x][y].explored = True
+        libtcod.console_put_char_ex(con, x, y, engine.state().level_map.topography[x][y].tile_face, engine.state().level_map.topography[x][y].fore_light, engine.state().level_map.topography[x][y].back_light)
+        engine.state().level_map.topography[x][y].explored = True
 
 def draw(object):
-  if libtcod.map_is_in_fov(data.state().level_map.fov, object.x, object.y):
+  if libtcod.map_is_in_fov(engine.state().level_map.fov, object.x, object.y):
     libtcod.console_set_default_foreground(con, object.color)
     libtcod.console_put_char(con, object.x, object.y, object.char, libtcod.BKGND_NONE)
 
@@ -73,22 +73,22 @@ def clear(object):
 def blit_map(center):
   x = center.x - (CAMERA_WIDTH/2)
   if x <= 0: x = 0
-  if x + CAMERA_WIDTH >= data.state().level_map.width: x = data.state().level_map.width - CAMERA_WIDTH
+  if x + CAMERA_WIDTH >= engine.state().level_map.width: x = engine.state().level_map.width - CAMERA_WIDTH
   y = center.y - (CAMERA_HEIGHT/2)
   if y <= 0: y = 0
-  if y + CAMERA_HEIGHT >= data.state().level_map.height: y = data.state().level_map.height - CAMERA_HEIGHT 
+  if y + CAMERA_HEIGHT >= engine.state().level_map.height: y = engine.state().level_map.height - CAMERA_HEIGHT 
   libtcod.console_blit(con, x, y, CAMERA_WIDTH, CAMERA_HEIGHT, 0, 0, 0)
 
 def side_bar(actor):
   libtcod.console_set_default_background(side_panel, libtcod.black)
   libtcod.console_clear(side_panel)
-  if actor == data.state().player: libtcod.console_print_frame(side_panel,0, 2, 15, 10, clear=True)
-  libtcod.console_print_ex(side_panel, 1 , 3, libtcod.BKGND_NONE, libtcod.LEFT, data.state().player.name.capitalize() + ' lvl: ' + str(data.state().player.creature.level))
-  render_bar(1, 5, BAR_WIDTH, 'HP', data.state().player.creature.hp, data.state().player.creature.max_hp, libtcod.light_red, libtcod.darker_red)
-  render_bar(1, 7, BAR_WIDTH, 'XP', data.state().player.creature.xp, data.state().player.creature.lvl_base + data.state().player.creature.level * data.state().player.creature.lvl_factor, libtcod.light_purple, libtcod.darker_purple)
-  libtcod.console_print_ex(side_panel, 1 , 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Def: ' + str(data.state().player.creature.defense) + ' + ' + str(sum(equip.equipment.defense_bonus for equip in data.state().player.creature.equipment.values() if equip is not None)))
-  libtcod.console_print_ex(side_panel, 1 , 10, libtcod.BKGND_NONE, libtcod.LEFT, 'Pow: ' + str(data.state().player.creature.power) + ' + ' + str(sum(equip.equipment.power_bonus for equip in data.state().player.creature.equipment.values() if equip is not None)))
-  libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(data.state().d_level))
+  if actor == engine.state().player: libtcod.console_print_frame(side_panel,0, 2, 15, 10, clear=True)
+  libtcod.console_print_ex(side_panel, 1 , 3, libtcod.BKGND_NONE, libtcod.LEFT, engine.state().player.name.capitalize() + ' lvl: ' + str(engine.state().player.creature.level))
+  render_bar(1, 5, BAR_WIDTH, 'HP', engine.state().player.creature.hp, engine.state().player.creature.max_hp, libtcod.light_red, libtcod.darker_red)
+  render_bar(1, 7, BAR_WIDTH, 'XP', engine.state().player.creature.xp, engine.state().player.creature.lvl_base + engine.state().player.creature.level * engine.state().player.creature.lvl_factor, libtcod.light_purple, libtcod.darker_purple)
+  libtcod.console_print_ex(side_panel, 1 , 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Def: ' + str(engine.state().player.creature.defense) + ' + ' + str(sum(equip.equipment.defense_bonus for equip in engine.state().player.creature.equipment.values() if equip is not None)))
+  libtcod.console_print_ex(side_panel, 1 , 10, libtcod.BKGND_NONE, libtcod.LEFT, 'Pow: ' + str(engine.state().player.creature.power) + ' + ' + str(sum(equip.equipment.power_bonus for equip in engine.state().player.creature.equipment.values() if equip is not None)))
+  libtcod.console_print_ex(side_panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'D. level ' + str(engine.state().d_level))
   libtcod.console_blit(side_panel, 0, 0, SCREEN_WIDTH - CAMERA_WIDTH, CAMERA_HEIGHT, 0, CAMERA_WIDTH, 0) 
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
@@ -105,12 +105,12 @@ def msg_bar(actor):
   libtcod.console_set_default_background(msg_panel, libtcod.black)
   libtcod.console_clear(msg_panel)
   y = 1
-  for (line, color) in data.state().messages:
+  for (line, color) in engine.state().messages:
     libtcod.console_set_default_foreground(msg_panel, color)
     libtcod.console_print_ex(msg_panel, 1, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
     y += 1
   if actor.ai.state == 'playing':
-    standing = [obj.name for obj in data.state().level_map.objects if obj.x == actor.x and obj.y == actor.y and obj.name != actor.name]
+    standing = [obj.name for obj in engine.state().level_map.objects if obj.x == actor.x and obj.y == actor.y and obj.name != actor.name]
     if not len(standing) == 0:
       standing = ', '.join(standing)
       libtcod.console_set_default_foreground(msg_panel, libtcod.light_gray)
@@ -126,15 +126,15 @@ def msg_bar(actor):
 def message(new_msg, color = libtcod.white):
   new_msg_lines = textwrap.wrap(new_msg, msg_width)
   for line in new_msg_lines:
-    if len(data.state().messages) == msg_height:
-      del data.state().messages[0]
-    data.state().messages.append( (line, color) )
+    if len(engine.state().messages) == msg_height:
+      del engine.state().messages[0]
+    engine.state().messages.append( (line, color) )
 
 def look_names():
   (x, y) = (cursor.x, cursor.y)
   names = []
-  for obj in data.state().level_map.objects:
-    if obj.x == x and obj.y == y and libtcod.map_is_in_fov(data.state().level_map.fov, obj.x, obj.y):
+  for obj in engine.state().level_map.objects:
+    if obj.x == x and obj.y == y and libtcod.map_is_in_fov(engine.state().level_map.fov, obj.x, obj.y):
       if obj.creature:
         names.append(obj.name + '(lv' + str(obj.creature.level) +')')
       else:
@@ -148,19 +148,19 @@ def look_names():
 def start_cursor(x, y):
   global old_fore, old_back
   (cursor.x, cursor.y) = (x, y)
-  old_back = data.state().level_map.topography[cursor.x][cursor.y].back_light
-  old_fore = data.state().level_map.topography[cursor.x][cursor.y].fore_light
-  data.state().level_map.topography[cursor.x][cursor.y].back_light = libtcod.black
-  data.state().level_map.topography[cursor.x][cursor.y].fore_light = libtcod.white
+  old_back = engine.state().level_map.topography[cursor.x][cursor.y].back_light
+  old_fore = engine.state().level_map.topography[cursor.x][cursor.y].fore_light
+  engine.state().level_map.topography[cursor.x][cursor.y].back_light = libtcod.black
+  engine.state().level_map.topography[cursor.x][cursor.y].fore_light = libtcod.white
 
 def cursor_move(dx, dy):
-  if libtcod.map_is_in_fov(data.state().level_map.fov, cursor.x + dx, cursor.y + dy):
+  if libtcod.map_is_in_fov(engine.state().level_map.fov, cursor.x + dx, cursor.y + dy):
     clear_cursor()
     start_cursor(cursor.x + dx, cursor.y + dy)
 
 def clear_cursor():
-  data.state().level_map.topography[cursor.x][cursor.y].back_light = old_back
-  data.state().level_map.topography[cursor.x][cursor.y].fore_light = old_fore
+  engine.state().level_map.topography[cursor.x][cursor.y].back_light = old_back
+  engine.state().level_map.topography[cursor.x][cursor.y].fore_light = old_fore
 
 def get_cursor():
   tuple = (cursor.x, cursor.y)

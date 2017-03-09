@@ -1,5 +1,5 @@
 ﻿import libtcodpy as libtcod
-import data
+import engine
 import render
 import get_input
 
@@ -10,7 +10,7 @@ class BasicMonster:
   def take_turn(self):
     if self.state == 'playing':
       monster = self.owner
-      data.fov_recompute(monster)
+      libtcod.map_compute_fov(engine.state().level_map.fov, monster.x, monster.y, monster.creature.sight, True, 0)
       target = monster.creature.closest_enemy(monster.creature.sight)
       if target is not None:
         if monster.distance_to(target) >= 2:
@@ -21,7 +21,7 @@ class BasicMonster:
         self.action = 'didnt-take-turn'
         while self.action == 'didnt-take-turn':
           (x, y) = (libtcod.random_get_int(0, -1, 1), libtcod.random_get_int(0, -1, 1))
-          if not data.state().level_map.is_blocked(monster.x + x, monster.y + y):
+          if not engine.state().level_map.is_blocked(monster.x + x, monster.y + y):
             self.action = 'moved'
             monster.move(x, y)
       self.owner.creature.check_status = True
@@ -41,7 +41,7 @@ class PlayerControlled:
       render.all(self.owner)
       libtcod.console_flush()
       self.action = get_input.handle_keys(self.owner)
-      for object in data.state().level_map.objects:
+      for object in engine.state().level_map.objects:
         render.clear(object)
       if self.owner.creature:
         self.owner.creature.check_status = True

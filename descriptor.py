@@ -1,8 +1,9 @@
 import libtcodpy as libtcod
-import data
+import engine
 import classes
 import combat
 import ai
+import render
 
 def creature_chances():
   chances = {}
@@ -17,7 +18,7 @@ def creatures(id, x, y):
     ai_component = ai.PlayerControlled()
     creature = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'snake':
-    creature_component = classes.Creature(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=combat.monster_death, nat_atk_effect=data.inflict_poison)
+    creature_component = classes.Creature(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=combat.monster_death, nat_atk_effect=inflict_poison)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'orc':
@@ -86,11 +87,20 @@ def items(id, x, y):
     item = classes.Object(x, y, chr(147), 'arrow', libtcod.dark_gray, item=item_component)
   return item
 
+def inflict_poison(attacker, target):
+  if libtcod.random_get_int(0, 1, 100) > target.creature.poison_resist:
+    target.creature.status = 'poison'
+    target.creature.status_inflictor = attacker
+    if target == engine.state().player: 
+      render.message(target.name.capitalize() + ' has been poisoned by ' + attacker.name + '.', libtcod.purple)
+    if attacker == engine.state().player:
+      render.message(attacker.name.capitalize() + ' has poisoned ' + target.name + '.', libtcod.fuchsia)
+
 def scroll(owner, caster):
   if owner.spell.effect(owner, caster) == 'cancelled': return 'cancelled'
 
 def from_dungeon_level(table):
   for (value, level) in reversed(table):
-    if data.state().d_level >= level:
+    if engine.state().d_level >= level:
       return value
   return 0
