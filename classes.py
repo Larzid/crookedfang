@@ -166,8 +166,16 @@ class Creature:
     self.hp += amount
     if self.hp > self.max_hp:
       self.hp = self.max_hp
+  def check_level_up(self):
+    level_up_xp = self.lvl_base + self.level * self.lvl_factor
+    if self.xp >= level_up_xp and level_up_xp != 0:
+      self.level += 1
+      self.xp -= level_up_xp
+      if self.owner == engine.state().player:
+        render.message('Your battle skills grow stronger! You reached level ' + str(self.level) + '!', libtcod.yellow)
+      self.owner.ai.level_up()
   def status_check(self):
-    combat.check_level_up(self)
+    self.check_level_up()
     if self.status == 'normal' and self.last_hurt is not None and engine.state().turn - self.last_hurt != 0 and (engine.state().turn - self.last_hurt) % 10 == 0:
       self.heal(1)
     if self.status == 'poison':

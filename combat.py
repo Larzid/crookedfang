@@ -3,45 +3,6 @@ import get_input
 import ai
 import engine
 import render
-import glob
-import os
-
-def check_level_up(who):
-  level_up_xp = who.lvl_base + who.level * who.lvl_factor
-  if who.xp >= level_up_xp and level_up_xp != 0:
-    who.level += 1
-    who.xp -= level_up_xp
-    if who.owner == engine.state().player:
-      render.message('Your battle skills grow stronger! You reached level ' + str(who.level) + '!', libtcod.yellow)
-    who.owner.ai.level_up()
-
-def player_death(player, attacker):
-  if attacker is not None: render.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
-  else: render.message('You died of severe battle wounds.', libtcod.red)
-  player.ai.state = 'dead'
-  player.char = '%'
-  player.color = libtcod.dark_red
-  player.blocks = False
-  player.name = 'remains of ' + player.name
-  player.send_to_back()
-  for f in glob.glob('lvl*'):
-    os.remove(f)
-
-def monster_death(monster, attacker):
-#  eq = [piece for piece in monster.creature.equipment.values() if piece is not None]
-#  for obj in eq:
-#    obj.equipment.dequip(monster)
-#  for obj in monster.creature.inventory:
-#    obj.item.drop(monster)
-  if attacker is not None: render.message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
-  else: render.message(monster.name.capitalize() + ' died of severe battle wounds.', libtcod.orange)
-  monster.char = '%'
-  monster.color = libtcod.dark_red
-  monster.blocks = False
-  monster.creature = None
-  monster.ai = None
-  monster.name = 'remains of ' + monster.name
-  monster.send_to_back()
 
 def cast_heal(owner, caster, target=None):
   if target is None:

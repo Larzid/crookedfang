@@ -4,6 +4,8 @@ import classes
 import combat
 import ai
 import render
+import glob
+import os
 
 def creature_chances():
   chances = {}
@@ -14,22 +16,54 @@ def creature_chances():
 
 def creatures(id, x, y):
   if id == 'player':
-    creature_component = classes.Creature(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, xp_bonus=350, lvl_base=200, lvl_factor=150, inv_max=26, death_function=combat.player_death)
+    creature_component = classes.Creature(faction='player', hp=100, defense=1, power=4, sight=7, poison_resist=30, xp_bonus=350, lvl_base=200, lvl_factor=150, inv_max=26, death_function=player_death)
     ai_component = ai.PlayerControlled()
     creature = classes.Object(0, 0, '@', 'player', libtcod.white, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'snake':
-    creature_component = classes.Creature(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=combat.monster_death, nat_atk_effect=inflict_poison)
+    creature_component = classes.Creature(faction='wild', hp=10, defense=0, power=3, sight=15, poison_resist=80, xp_bonus=20, lvl_base=20, lvl_factor=15, death_function=monster_death, nat_atk_effect=inflict_poison)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 's', 'snake', libtcod.darker_red, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'orc':
-    creature_component = classes.Creature(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20, xp_bonus=35, lvl_base=40, lvl_factor=20, death_function=combat.monster_death)
+    creature_component = classes.Creature(faction='dungeon', hp=20, defense=0, power=4, sight=10, poison_resist=20, xp_bonus=35, lvl_base=40, lvl_factor=20, death_function=monster_death)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks=True, creature=creature_component, ai=ai_component)
   elif id == 'troll':
-    creature_component = classes.Creature(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30, xp_bonus=100, lvl_base=200, lvl_factor=150, death_function=combat.monster_death)
+    creature_component = classes.Creature(faction='dungeon', hp=30, defense=2, power=8, sight=5, poison_resist=30, xp_bonus=100, lvl_base=200, lvl_factor=150, death_function=monster_death)
     ai_component = ai.BasicMonster()
     creature = classes.Object(x, y, 'T', 'troll', libtcod.darker_green, blocks=True, creature=creature_component, ai=ai_component)
   return creature
+
+def player_death(player, attacker):
+  if attacker is not None: render.message('You were killed by ' + attacker.name.capitalize() + '!', libtcod.red)
+  else: render.message('You died of severe battle wounds.', libtcod.red)
+  player.ai.state = 'dead'
+  player.char = '%'
+  player.color = libtcod.dark_red
+  player.blocks = False
+  player.name = 'remains of ' + player.name
+  player.send_to_back()
+  try:
+    os.remove('savegame')
+  except:
+    return
+  for f in glob.glob('lvl*'):
+    os.remove(f)
+
+def monster_death(monster, attacker):
+#  eq = [piece for piece in monster.creature.equipment.values() if piece is not None]
+#  for obj in eq:
+#    obj.equipment.dequip(monster)
+#  for obj in monster.creature.inventory:
+#    obj.item.drop(monster)
+  if attacker.ai is not None: render.message(monster.name.capitalize() + ' was killed by ' + attacker.name.capitalize() + '!', libtcod.orange)
+  else: render.message(monster.name.capitalize() + ' died of severe battle wounds.', libtcod.orange)
+  monster.char = '%'
+  monster.color = libtcod.dark_red
+  monster.blocks = False
+  monster.creature = None
+  monster.ai = None
+  monster.name = 'remains of ' + monster.name
+  monster.send_to_back()
 
 def item_chances():
   chances = {}

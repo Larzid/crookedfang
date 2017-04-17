@@ -45,8 +45,6 @@ class GameState:
     file['d_level'] = self.d_level
     file['max_d_level'] = self.max_d_level
     file.close()
-    file = shelve.open('savegame', 'r')
-    file.close()
   def load_game(self):
     file = shelve.open('savegame', 'r')
     self.level_map = file['level_map']
