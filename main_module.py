@@ -2,6 +2,7 @@
 import render # All related to displaying stuff on the screen.
 import engine # Here live the global functions and objects (player, map, object list, etc.).
 
+# Github Test
 def main_menu():
   while not libtcod.console_is_window_closed():
     render.title_screen()
